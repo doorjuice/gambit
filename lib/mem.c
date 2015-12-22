@@ -12,8 +12,6 @@
 #include "mem.h"
 #include "c_intf.h"
 
-#include "MemoryAllocatedObject.cpp" //FIXME include header, not cpp
-
 /* The following includes are needed for debugging. */
 
 #include <stdlib.h>
@@ -343,6 +341,8 @@
 (words_nonmovable + WORDS_MOVABLE_USABLE - \
 overflow_reserve - 2*___MSECTION_FUDGE)
 
+#include "MemoryAllocatedObject.cpp" //FIXME include header, not cpp
+
 /*---------------------------------------------------------------------------*/
 
 /*
@@ -386,31 +386,6 @@ overflow_reserve - 2*___MSECTION_FUDGE)
  *  |    alloc_heap_ptr                                  alloc_stack_ptr      |
  *  alloc_heap_start                                          alloc_stack_start
  */
-
-
-/*---------------------------------------------------------------------------*/
-
-/* Constants related to representation of permanent and still objects: */
-
-#ifdef ___USE_HANDLES
-#define ___PERM_HAND_OFS 0
-#define ___PERM_BODY_OFS 2
-#else
-#define ___PERM_HAND_OFS ___PERM_BODY_OFS
-#define ___PERM_BODY_OFS 1
-#endif
-
-#define ___STILL_LINK_OFS 0
-#define ___STILL_REFCOUNT_OFS 1
-#define ___STILL_LENGTH_OFS 2
-#define ___STILL_MARK_OFS 3
-#ifdef ___USE_HANDLES
-#define ___STILL_HAND_OFS 4
-#define ___STILL_BODY_OFS 6
-#else
-#define ___STILL_HAND_OFS ___STILL_BODY_OFS
-#define ___STILL_BODY_OFS (5+1)/************/
-#endif
 
 
 /*---------------------------------------------------------------------------*/
@@ -1790,13 +1765,7 @@ ___HIDDEN void fatal_heap_overflow ___PVOID
 }
 
 
-___HIDDEN ___msection *next_msection
-   ___P((___processor_state ___ps,
-         ___msection *ms),
-        (___ps,
-         ms)
-___processor_state ___ps;
-___msection *ms;)
+___HIDDEN ___msection *next_msection(___processor_state ___ps, ___msection *ms)
 {
   ___msection *result;
 
@@ -1821,10 +1790,7 @@ ___msection *ms;)
 }
 
 
-___HIDDEN void next_stack_msection
-   ___P((___processor_state ___ps),
-        (___ps)
-___processor_state ___ps;)
+___HIDDEN void next_stack_msection(___processor_state ___ps)
 {
   if (stack_msection != 0)
     words_prev_msections += alloc_stack_start - alloc_stack_ptr;
@@ -1836,10 +1802,7 @@ ___processor_state ___ps;)
 }
 
 
-___HIDDEN void next_heap_msection
-   ___P((___processor_state ___ps),
-        (___ps)
-___processor_state ___ps;)
+___HIDDEN void next_heap_msection(___processor_state ___ps)
 {
   if (heap_msection != 0)
     {
@@ -1862,10 +1825,7 @@ ___processor_state ___ps;)
 #define ZAP_PATTERN ___CAST(___WORD,0xcafebabe)
 
 
-char *subtype_to_string
-   ___P((int subtype),
-        (subtype)
-int subtype;)
+char *subtype_to_string(int subtype)
 {
   switch (subtype)
     {
@@ -1903,10 +1863,7 @@ int subtype;)
     }
 }
 
-void print_value
-   ___P((___SCMOBJ val),
-        (val)
-___SCMOBJ val;)
+void print_value(___SCMOBJ val)
 {
   ___SCMOBJ ___temp;
   if (___FIXNUMP(val))
@@ -2021,13 +1978,7 @@ ___HIDDEN ___WORD *container_body; /* pointer to body of object      */
 ___HIDDEN int mark_array_call_line;
 
 
-___HIDDEN void print_prefix
-   ___P((char *prefix,
-         int indent),
-        (prefix,
-         indent)
-char *prefix;
-int indent;)
+___HIDDEN void print_prefix(char *prefix, int indent)
 {
   int i;
 
@@ -2547,32 +2498,14 @@ ___virtual_machine_state ___vms;)
 
 /*---------------------------------------------------------------------------*/
 
-#ifdef GATHER_STATS
-
-#define MAX_STAT_SIZE 20
-
-___HIDDEN ___SIZE_TS movable_pair_objs;
-___HIDDEN ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE+2];
-
-#endif
-
-
-/*---------------------------------------------------------------------------*/
-
 #ifdef ENABLE_CONSISTENCY_CHECKS
-
-#define mark_array(start,n) mark_array_debug(start,n,__LINE__)
-___HIDDEN void mark_array_debug (___PSD ___WORD *start, ___WORD n, int line)
-
+  #define mark_array(start,n) mark_array_debug(start,n,__LINE__)
+  ___HIDDEN void mark_array_debug(___PSD ___WORD *start, ___WORD n, int line)
 #else
-
-___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
-
+  ___HIDDEN void mark_array(___PSD ___WORD *start, ___WORD n)
 #endif
 {
   ___PSGET
-  ___WORD *alloc = alloc_heap_ptr;
-  ___WORD *limit = alloc_heap_limit;
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
   mark_array_call_line = line;
@@ -2585,95 +2518,40 @@ ___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
       if (___MEM_ALLOCATED(obj))
         {
           MemoryAllocatedObject mao(obj);
+          MovableObject *mo;
+          StillObject *so;
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
           if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1)
             validate_old_obj (___PSP obj);
 #endif
 
-          if (mao.head_typ == ___MOVABLE0)
-            {
-              ___SIZE_TS words = mao.getSize();
-#if ___WS == 4
-              ___BOOL pad = 0;
-              while (alloc + words + (subtype >= ___sS64VECTOR ? 2 : 1) >
-                     limit)
-#else
-              while (alloc + words + 1 > limit)
-#endif
-                {
-                  alloc_heap_ptr = alloc;
-                  next_heap_msection (___ps);
-                  alloc = alloc_heap_ptr;
-                  limit = alloc_heap_limit;
-                }
-#if ___WS != 8
-              /*
-               * ___sS64VECTOR, ___sU64VECTOR, ___sF64VECTOR,
-               * ___sFLONUM and ___sBIGNUM need to be aligned on a
-               * multiple of 8.
-               */
-              if (mao.subtype >= ___sS64VECTOR)
-                {
-                  if ((___CAST(___WORD,alloc) & (8-1)) == 0)
-                    *alloc++ = ___MAKE_HD_WORDS(0, ___sVECTOR);
-                  else
-                    pad = 1;
-                }
-#endif
-#ifdef GATHER_STATS
-              if (mao.subtype == ___sPAIR)
-                movable_pair_objs++;
-              else if (words <= MAX_STAT_SIZE)
-                movable_subtyped_objs[words]++;
-              else
-                movable_subtyped_objs[MAX_STAT_SIZE+1]++;
-#endif
-              *start = ___TAG((alloc + 1 - ___BODY_OFS), ___TYP(obj));
-              alloc = mao.move(alloc);
-
-#if ___WS == 4
-              if (pad)
-                *alloc++ = ___MAKE_HD_WORDS(0, ___sVECTOR);
-#endif
-            }
-          else if (mao.head_typ == ___STILL)
-            {
-              if (mao.body[___STILL_MARK_OFS - ___STILL_BODY_OFS] == -1)
-                {
-                  mao.body[___STILL_MARK_OFS - ___STILL_BODY_OFS]
-                    = ___CAST(___WORD,still_objs_to_scan);
-                  still_objs_to_scan
-                    = ___CAST(___WORD,mao.body - ___STILL_BODY_OFS);
-                }
-            }
-          else if (___TYP(mao.head_typ) == ___FORW)
-            {
-              ___WORD *copy_body = ___UNTAG_AS(mao.head, ___FORW) + ___BODY_OFS;
-              *start = ___TAG((copy_body - ___BODY_OFS), ___TYP(obj));
-            }
+          if (mo = mao.asMovable()) {
+            *start = ___TAG(mo->move(___PSP alloc_heap_ptr), ___TYP(obj));
+          }
+          else if (so = mao.asStill()) {
+            if (!so->isMarked())
+              still_objs_to_scan = so->mark(still_objs_to_scan);
+          }
+          else if (mao.isForwarded()) {
+            ___WORD *copy_body = ___UNTAG_AS(mao.getHead(), ___FORW);
+            *start = ___TAG(copy_body, ___TYP(obj));
+          }
 #ifdef ENABLE_CONSISTENCY_CHECKS
-          else if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1 &&
-                   mao.head_typ != ___PERM)
+          else if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1
+                   && !mao.isPermanent()) {
             bug (___PSP obj, "was not ___PERM, ___STILL, ___MOVABLE0 or ___FORW");
+          }
 #endif
         }
 
       start++;
       n--;
     }
-
-  alloc_heap_ptr = alloc;
 }
 
 
-___HIDDEN void mark_captured_continuation
-   ___P((___PSD
-         ___WORD *orig_ptr),
-        (___PSV
-         orig_ptr)
-___PSDKR
-___WORD *orig_ptr;)
+___HIDDEN void mark_captured_continuation(___PSD ___WORD *orig_ptr)
 {
   ___PSGET
   ___WORD *ptr = orig_ptr;
@@ -4562,6 +4440,7 @@ ___SIZE_TS nonmovable_words_needed;)
     ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
 
 #ifdef GATHER_STATS
+  //TODO consider moving this to MemoryAllocatedObject.h
   movable_pair_objs = 0;
   {
     int i;
