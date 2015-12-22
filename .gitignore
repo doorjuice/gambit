@@ -80,6 +80,7 @@ lib/_*.c
 
 prebuilt/macosx/build-phase2
 prebuilt/windows/build-phase2
+!prebuilt/windows/binpatch.exe
 
 gsc-boot
 gsc-boot.exe
