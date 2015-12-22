@@ -12,6 +12,8 @@
 #include "mem.h"
 #include "c_intf.h"
 
+#include "MemoryAllocatedObject.cpp" //FIXME include header, not cpp
+
 /* The following includes are needed for debugging. */
 
 #include <stdlib.h>
@@ -2582,24 +2584,16 @@ ___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
 
       if (___MEM_ALLOCATED(obj))
         {
-          ___WORD *body;
-          ___WORD head;
-          int head_typ;
-          int subtype;
+          MemoryAllocatedObject mao(obj);
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
           if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1)
             validate_old_obj (___PSP obj);
 #endif
 
-          body = ___UNTAG(obj) + ___BODY_OFS;
-          head = body[-1];
-          subtype = ___HD_SUBTYPE(head);
-          head_typ = ___HD_TYP(head);
-
-          if (head_typ == ___MOVABLE0)
+          if (mao.head_typ == ___MOVABLE0)
             {
-              ___SIZE_TS words = ___HD_WORDS(head);
+              ___SIZE_TS words = mao.getSize();
 #if ___WS == 4
               ___BOOL pad = 0;
               while (alloc + words + (subtype >= ___sS64VECTOR ? 2 : 1) >
@@ -2619,7 +2613,7 @@ ___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
                * ___sFLONUM and ___sBIGNUM need to be aligned on a
                * multiple of 8.
                */
-              if (subtype >= ___sS64VECTOR)
+              if (mao.subtype >= ___sS64VECTOR)
                 {
                   if ((___CAST(___WORD,alloc) & (8-1)) == 0)
                     *alloc++ = ___MAKE_HD_WORDS(0, ___sVECTOR);
@@ -2628,44 +2622,39 @@ ___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
                 }
 #endif
 #ifdef GATHER_STATS
-              if (subtype == ___sPAIR)
+              if (mao.subtype == ___sPAIR)
                 movable_pair_objs++;
               else if (words <= MAX_STAT_SIZE)
                 movable_subtyped_objs[words]++;
               else
                 movable_subtyped_objs[MAX_STAT_SIZE+1]++;
 #endif
-              *alloc++ = head;
-              *start = ___TAG((alloc - ___BODY_OFS), ___TYP(obj));
-              body[-1] = ___TAG((alloc - ___BODY_OFS), ___FORW);
-              while (words > 0)
-                {
-                  *alloc++ = *body++;
-                  words--;
-                }
+              *start = ___TAG((alloc + 1 - ___BODY_OFS), ___TYP(obj));
+              alloc = mao.move(alloc);
+
 #if ___WS == 4
               if (pad)
                 *alloc++ = ___MAKE_HD_WORDS(0, ___sVECTOR);
 #endif
             }
-          else if (head_typ == ___STILL)
+          else if (mao.head_typ == ___STILL)
             {
-              if (body[___STILL_MARK_OFS - ___STILL_BODY_OFS] == -1)
+              if (mao.body[___STILL_MARK_OFS - ___STILL_BODY_OFS] == -1)
                 {
-                  body[___STILL_MARK_OFS - ___STILL_BODY_OFS]
+                  mao.body[___STILL_MARK_OFS - ___STILL_BODY_OFS]
                     = ___CAST(___WORD,still_objs_to_scan);
                   still_objs_to_scan
-                    = ___CAST(___WORD,body - ___STILL_BODY_OFS);
+                    = ___CAST(___WORD,mao.body - ___STILL_BODY_OFS);
                 }
             }
-          else if (___TYP(head_typ) == ___FORW)
+          else if (___TYP(mao.head_typ) == ___FORW)
             {
-              ___WORD *copy_body = ___UNTAG_AS(head, ___FORW) + ___BODY_OFS;
+              ___WORD *copy_body = ___UNTAG_AS(mao.head, ___FORW) + ___BODY_OFS;
               *start = ___TAG((copy_body - ___BODY_OFS), ___TYP(obj));
             }
 #ifdef ENABLE_CONSISTENCY_CHECKS
           else if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1 &&
-                   head_typ != ___PERM)
+                   mao.head_typ != ___PERM)
             bug (___PSP obj, "was not ___PERM, ___STILL, ___MOVABLE0 or ___FORW");
 #endif
         }
