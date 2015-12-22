@@ -1,5 +1,5 @@
 #ifdef ___LINKER_INFO
-; File: "mix.c", produced by Gambit v4.8.2
+; File: "mix.c", produced by Gambit v4.8.2 [cpp]
 (
 408002
 (C)
