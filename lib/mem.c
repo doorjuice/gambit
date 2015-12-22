@@ -2559,34 +2559,12 @@ ___HIDDEN ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE+2];
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
 
-#define mark_array(start,n) mark_array_debug (start,n,__LINE__)
-
-___HIDDEN void mark_array_debug
-   ___P((___PSD
-         ___WORD *start,
-         ___WORD n,
-         int line),
-        (___PSV
-         start,
-         n,
-         line)
-___PSDKR
-___WORD *start;
-___WORD n;
-int line;)
+#define mark_array(start,n) mark_array_debug(start,n,__LINE__)
+___HIDDEN void mark_array_debug (___PSD ___WORD *start, ___WORD n, int line)
 
 #else
 
-___HIDDEN void mark_array
-   ___P((___PSD
-         ___WORD *start,
-         ___WORD n),
-        (___PSV
-         start,
-         n)
-___PSDKR
-___WORD *start;
-___WORD n;)
+___HIDDEN void mark_array (___PSD ___WORD *start, ___WORD n)
 
 #endif
 {
