@@ -7661,15 +7661,15 @@ typedef struct ___sync_op_struct
         arg[1] = rhs.arg[1];
         return *this;
       }
-      
-      void copy(const volatile ___sync_op_struct& src) volatile
-        {
-          op = src.op;
-          arg[0] = src.arg[0];
-          arg[1] = src.arg[1];
-        }
     
   } ___sync_op_struct;
+
+inline void ___copy_sync_op_struct(volatile ___sync_op_struct* dest, const ___sync_op_struct* src)
+  {
+    dest->op = src->op;
+    dest->arg[0] = src->arg[0];
+    dest->arg[1] = src->arg[1];
+  }
 
 /* Processor structure */
 

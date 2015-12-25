@@ -257,6 +257,8 @@ AC_ARG_ENABLE(debug,
 if test "$ENABLE_DEBUG" = yes; then
   AC_DEFINE([___DEBUG],[],[Enable debugging])
   DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG"
+else
+  DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -DNDEBUG"
 fi
 
 ###############################################################################

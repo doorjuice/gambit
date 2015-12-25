@@ -4607,6 +4607,8 @@ if test "$ENABLE_DEBUG" = yes; then
 $as_echo "#define ___DEBUG /**/" >>confdefs.h
 
   DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG"
+else
+  DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -DNDEBUG"
 fi
 
 ###############################################################################

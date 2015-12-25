@@ -386,12 +386,12 @@ ___sync_op_struct *sop_ptr;)
 
       if (id & 1)
         {
-          parent->sync_op1.copy(sop);
+          ___copy_sync_op_struct(&parent->sync_op1, &sop);
           parent->sync_id1 = sid;
         }
       else
         {
-          parent->sync_op2.copy(sop);
+          ___copy_sync_op_struct(&parent->sync_op2, &sop);
           parent->sync_id2 = sid;
         }
 
@@ -413,14 +413,14 @@ ___sync_op_struct *sop_ptr;)
     {
       ___processor_state child1 = &___vms->pstate[child_id1];
 
-      child1->sync_op0.copy(sop);
+      ___copy_sync_op_struct(&child1->sync_op0, &sop);
       child1->sync_id0 = sid;
 
       if (child_id2 < n)
         {
           ___processor_state child2 = &___vms->pstate[child_id2];
 
-          child2->sync_op0.copy(sop);
+          ___copy_sync_op_struct(&child2->sync_op0, &sop);
           child2->sync_id0 = sid;
         }
     }
