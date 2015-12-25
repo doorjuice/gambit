@@ -7653,6 +7653,22 @@ typedef struct ___sync_op_struct
   {
     unsigned char op; /* operation requested */
     ___WORD arg[2];   /* arguments of the operation */
+    
+    ___sync_op_struct& operator=(const volatile ___sync_op_struct& rhs)
+      {
+        op = rhs.op;
+        arg[0] = rhs.arg[0];
+        arg[1] = rhs.arg[1];
+        return *this;
+      }
+      
+      void copy(const volatile ___sync_op_struct& src) volatile
+        {
+          op = src.op;
+          arg[0] = src.arg[0];
+          arg[1] = src.arg[1];
+        }
+    
   } ___sync_op_struct;
 
 /* Processor structure */
