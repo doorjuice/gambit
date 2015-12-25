@@ -31,7 +31,7 @@ StillObject* MemoryAllocatedObject::asStill() {
 }
 
 
-// ----------------
+/*---------------------------------------------------------------------------*/
 
 MovableObject::MovableObject(___WORD obj)
     : MemoryAllocatedObject(obj) {
@@ -115,7 +115,7 @@ ___WORD* MovableObject::moveData(___WORD* dest) {
 }
 
 
-// ----------------
+/*---------------------------------------------------------------------------*/
 
 StillObject::StillObject(___WORD obj)
     : MemoryAllocatedObject(obj) {

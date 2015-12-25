@@ -52,7 +52,6 @@
  * this percentage.
  */
 
-
 #define ___MAX_NB_PARMS         1024
 #define ___MAX_NB_ARGS          8192
 #define ___MAX_NB_FRAME_SLOTS   8192
@@ -66,6 +65,38 @@
 #define ___DEFAULT_LIVE_PERCENT 50
 #define ___DEFAULT_MIN_HEAP     (1*(1<<20))
 
+
+/*---------------------------------------------------------------------------*/
+
+#ifdef ___DEBUG
+
+/*
+ * Defining the symbol ENABLE_CONSISTENCY_CHECKS will enable the GC to
+ * perform checks that detect when the heap is in an inconsistent
+ * state.  This is useful to detect bugs in the GC and the rest of the
+ * system.  To perform the consistency checks, the verbosity level in
+ * ___GSTATE->setup_params.debug_settings must be at least 1.  The checks are
+ * very extensive and consequently are expensive.  They should only be
+ * used for debugging.
+ */
+#define ENABLE_CONSISTENCY_CHECKS
+
+/*
+ * Defining the symbol GATHER_STATS will cause the GC to gather
+ * statistics on the objects it encounters in the heap.
+ */
+#define GATHER_STATS
+
+/*
+ * Defining the symbol SHOW_FRAMES will cause the GC to print out a
+ * trace of the continuation frames that are processed.
+ */
+#undef SHOW_FRAMES
+
+#endif
+
+
+/*---------------------------------------------------------------------------*/
 
 /* 
  * Initial length of symbol table and keyword table.
@@ -214,6 +245,73 @@ extern ___SCMOBJ ___make_global_var
 extern ___F64 ___bytes_allocated
    ___P((___PSDNC),
         ());
+
+
+/*---------------------------------------------------------------------------*/
+
+#define ___PSTATE_MEM(var) ___ps->mem.var
+#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
+
+#define stack_msection          ___PSTATE_MEM(stack_msection_)
+#define alloc_stack_start       ___PSTATE_MEM(alloc_stack_start_)
+#define alloc_stack_ptr         ___PSTATE_MEM(alloc_stack_ptr_)
+#define alloc_stack_limit       ___PSTATE_MEM(alloc_stack_limit_)
+#define heap_msection           ___PSTATE_MEM(heap_msection_)
+#define alloc_heap_start        ___PSTATE_MEM(alloc_heap_start_)
+#define alloc_heap_ptr          ___PSTATE_MEM(alloc_heap_ptr_)
+#define alloc_heap_limit        ___PSTATE_MEM(alloc_heap_limit_)
+#define nonexecutable_wills     ___PSTATE_MEM(nonexecutable_wills_)
+
+#define heap_size               ___VMSTATE_MEM(heap_size_)
+#define normal_overflow_reserve ___VMSTATE_MEM(normal_overflow_reserve_)
+#define overflow_reserve        ___VMSTATE_MEM(overflow_reserve_)
+#define words_nonmovable        ___VMSTATE_MEM(words_nonmovable_)
+#define words_prev_msections    ___VMSTATE_MEM(words_prev_msections_)
+#define still_objs              ___VMSTATE_MEM(still_objs_)
+#define still_objs_to_scan      ___VMSTATE_MEM(still_objs_to_scan_)
+#define the_msections           ___VMSTATE_MEM(the_msections_)
+#define tospace_at_top          ___VMSTATE_MEM(tospace_at_top_)
+#define nb_msections_used       ___VMSTATE_MEM(nb_msections_used_)
+#define alloc_msection          ___VMSTATE_MEM(alloc_msection_)
+#define scan_msection           ___VMSTATE_MEM(scan_msection_)
+#define scan_ptr                ___VMSTATE_MEM(scan_ptr_)
+#define traverse_weak_refs      ___VMSTATE_MEM(traverse_weak_refs_)
+#define reached_gc_hash_tables  ___VMSTATE_MEM(reached_gc_hash_tables_)
+#define executable_wills        ___VMSTATE_MEM(executable_wills_)
+#define rc_head                 ___VMSTATE_MEM(rc_head_)
+
+#define nb_gcs                  ___VMSTATE_MEM(nb_gcs_)
+#define gc_user_time            ___VMSTATE_MEM(gc_user_time_)
+#define gc_sys_time             ___VMSTATE_MEM(gc_sys_time_)
+#define gc_real_time            ___VMSTATE_MEM(gc_real_time_)
+#define bytes_allocated_minus_occupied ___VMSTATE_MEM(bytes_allocated_minus_occupied_)
+
+#define last_gc_user_time       ___VMSTATE_MEM(last_gc_user_time_)
+#define last_gc_sys_time        ___VMSTATE_MEM(last_gc_sys_time_)
+#define last_gc_real_time       ___VMSTATE_MEM(last_gc_real_time_)
+#define last_gc_heap_size       ___VMSTATE_MEM(last_gc_heap_size_)
+#define last_gc_alloc           ___VMSTATE_MEM(last_gc_alloc_)
+#define last_gc_live            ___VMSTATE_MEM(last_gc_live_)
+#define last_gc_movable         ___VMSTATE_MEM(last_gc_movable_)
+#define last_gc_nonmovable      ___VMSTATE_MEM(last_gc_nonmovable_)
+
+/* words occupied in heap by movable objects including current msections */
+#define WORDS_MOVABLE \
+(2*(words_prev_msections + \
+(alloc_stack_start - alloc_stack_ptr) + \
+(alloc_heap_ptr - alloc_heap_start)))
+
+/* words occupied in heap including current msections */
+#define WORDS_OCCUPIED (words_nonmovable + WORDS_MOVABLE)
+
+/* words usable in msections */
+#define WORDS_MOVABLE_USABLE \
+(2*the_msections->nb_sections*___CAST(___SIZE_TS,((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1)))
+
+/* words available in heap */
+#define WORDS_AVAILABLE \
+(words_nonmovable + WORDS_MOVABLE_USABLE - \
+overflow_reserve - 2*___MSECTION_FUDGE)
 
 
 #endif

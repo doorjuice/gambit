@@ -1,6 +1,21 @@
 #ifndef MemoryAllocatedObject_H
 #define MemoryAllocatedObject_H
 
+#include "gambit.h"
+#include "mem.h"
+
+
+/*---------------------------------------------------------------------------*/
+
+#ifdef GATHER_STATS
+    #define MAX_STAT_SIZE 20
+    ___HIDDEN ___SIZE_TS movable_pair_objs;
+    ___HIDDEN ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE+2];
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
 /* Constants related to representation of permanent and still objects: */
 
 #ifdef ___USE_HANDLES
@@ -23,17 +38,10 @@
     #define ___STILL_BODY_OFS (5+1)/************/
 #endif
 
-/*---------------------------------------------------------------------------*/
-
-#ifdef GATHER_STATS
-    #define MAX_STAT_SIZE 20
-    ___HIDDEN ___SIZE_TS movable_pair_objs;
-    ___HIDDEN ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE+2];
-#endif
 
 /*---------------------------------------------------------------------------*/
 
-static void next_heap_msection(___processor_state ___ps);
+extern void next_heap_msection(___processor_state ___ps);
 
 class MovableObject;
 class StillObject;
