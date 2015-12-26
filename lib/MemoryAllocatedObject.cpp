@@ -10,23 +10,15 @@ MemoryAllocatedObject::MemoryAllocatedObject(___WORD obj) {
     subtype = ___HD_SUBTYPE(head);
 }
 
-bool MemoryAllocatedObject::isPermanent() const {
-    return ___HD_TYP(head) == ___PERM;
-}
-
-bool MemoryAllocatedObject::isForwarded() const {
-    return ___TYP(___HD_TYP(head)) == ___FORW;
-}
-
 MovableObject* MemoryAllocatedObject::asMovable() {
-    if (___HD_TYP(head) == ___MOVABLE0)
+    if (isMovable())
         return static_cast<MovableObject*>(this);
     else
         return NULL;
 }
 
 StillObject* MemoryAllocatedObject::asStill() {
-    if (___HD_TYP(head) == ___STILL)
+    if (isStill())
         return static_cast<StillObject*>(this);
     else
         return NULL;
@@ -37,14 +29,14 @@ StillObject* MemoryAllocatedObject::asStill() {
 
 MovableObject::MovableObject(___WORD obj)
     : MemoryAllocatedObject(obj) {
-    assert(___HD_TYP(head) == ___MOVABLE0);
+    assert(isMovable());
 }
 
 ___SIZE_TS MovableObject::getSize() const {
 #if ___WS == 4
-    return length + (subtype >= ___sS64VECTOR ? 2 : 1);
+    return getLength() + (getSubtype() >= ___sS64VECTOR ? 2 : 1);
 #else
-    return length + 1;
+    return getLength() + 1;
 #endif
 }
 
@@ -60,7 +52,7 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
     * multiple of 8.
     */
     int padding = 0;
-    if (subtype >= ___sS64VECTOR) {
+    if (getSubtype() >= ___sS64VECTOR) {
         if ((___CAST(___WORD,alloc) & (8-1)) == 0)
             *alloc++ = paddingData;
         else
@@ -72,8 +64,8 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
     gatherStats();
 #endif
 
-    ___WORD* newaddr = alloc + 1 - ___BODY_OFS;
-    alloc = moveData(alloc);
+    ___WORD* new_addr = alloc + 1 - ___BODY_OFS;
+    alloc = forwardTo(alloc);
 
 #if ___WS == 4
     if (padding)
@@ -81,7 +73,7 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
 #endif
 
     alloc_heap_ptr = alloc;
-    return newaddr;
+    return new_addr;
 }
 
 ___WORD* MovableObject::requireMemory(___PSD ___WORD* alloc) {
@@ -99,17 +91,18 @@ ___WORD* MovableObject::requireMemory(___PSD ___WORD* alloc) {
 }
 
 void MovableObject::gatherStats() {
-    if (subtype == ___sPAIR)
+    if (getSubtype() == ___sPAIR)
         movable_pair_objs++;
-    else if (length <= MAX_STAT_SIZE)
-        movable_subtyped_objs[length]++;
+    else if (getLength() <= MAX_STAT_SIZE)
+        movable_subtyped_objs[getLength()]++;
     else
         movable_subtyped_objs[MAX_STAT_SIZE+1]++;
 }
 
-___WORD* MovableObject::moveData(___WORD* dest) {
+___WORD* MovableObject::forwardTo(___WORD* dest) {
     //FIXME this method alters the object's state
-    *dest++ = head;
+    *dest++ = getHead();
+    ___SIZE_TS length = getLength();
     body[-1] = ___TAG((dest - ___BODY_OFS), ___FORW);
     while (length-- > 0)
         *dest++ = *body++;
@@ -121,7 +114,7 @@ ___WORD* MovableObject::moveData(___WORD* dest) {
 
 StillObject::StillObject(___WORD obj)
     : MemoryAllocatedObject(obj) {
-    assert(___HD_TYP(head) == ___STILL);
+    assert(isStill());
 }
 
 bool StillObject::isMarked() {

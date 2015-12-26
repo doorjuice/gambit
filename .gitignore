@@ -5,6 +5,7 @@
 makefile
 config.status
 autom4te.cache
+temp_*
 *.log
 
 *.a

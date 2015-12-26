@@ -48,8 +48,10 @@ class StillObject;
 
 class MemoryAllocatedObject {
   
-  	protected:
+    protected:
     ___WORD* body;
+
+  	private:
     ___WORD head;
     ___SIZE_TS length;
     int subtype;
@@ -61,12 +63,29 @@ class MemoryAllocatedObject {
         return head;
     }
     
+    inline ___SIZE_TS getLength() const {
+        return length;
+    }
+    
     inline int getSubtype() const {
         return subtype;
     }
     
-    bool isPermanent() const;
-    bool isForwarded() const;
+    inline bool isMovable() const {
+        return ___HD_TYP(head) == ___MOVABLE0;
+    }
+    
+    inline bool isStill() const {
+        return ___HD_TYP(head) == ___STILL;
+    }
+    
+    inline bool isPermanent() const {
+        return ___HD_TYP(head) == ___PERM;
+    }
+    
+    inline bool isForwarded() const {
+        return ___TYP(___HD_TYP(head)) == ___FORW;
+    }
     
     MovableObject* asMovable();
     StillObject* asStill();
@@ -84,7 +103,7 @@ class MovableObject : public MemoryAllocatedObject {
     private:
     ___WORD* requireMemory(___PSD ___WORD* alloc);
     void gatherStats();
-    ___WORD* moveData(___WORD* dest);
+    ___WORD* forwardTo(___WORD* dest);
 };
 
 class StillObject : public MemoryAllocatedObject {
