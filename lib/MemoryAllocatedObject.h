@@ -57,7 +57,7 @@ class MemoryAllocatedObject {
     int subtype;
 
     public:
-    MemoryAllocatedObject(___WORD obj);
+    MemoryAllocatedObject(___WORD* obj);
     
     inline ___WORD getHead() const {
         return head;
@@ -95,22 +95,25 @@ class MovableObject : public MemoryAllocatedObject {
     static const ___WORD paddingData = ___MAKE_HD_WORDS(0, ___sVECTOR);
     
     public:
-    MovableObject(___WORD obj);
+    MovableObject(___WORD* obj);
     
     ___SIZE_TS getSize() const;
     ___WORD* move(___PSD ___WORD* alloc);
     
     private:
     ___WORD* requireMemory(___PSD ___WORD* alloc);
-    void gatherStats();
     ___WORD* forwardTo(___WORD* dest);
+    void gatherStats();
 };
 
 class StillObject : public MemoryAllocatedObject {
     public:
-    StillObject(___WORD obj);
+    StillObject(___WORD* obj);
     
-    bool isMarked();
+    inline bool isMarked() const {
+        return body[___STILL_MARK_OFS - ___STILL_BODY_OFS] != -1;
+    }
+    
     ___WORD mark(___WORD scanList);
 };
 

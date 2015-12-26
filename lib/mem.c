@@ -2415,19 +2415,19 @@ ___virtual_machine_state ___vms;)
 
       if (___MEM_ALLOCATED(obj))
         {
-          MemoryAllocatedObject mao(obj);
-          MovableObject *mo;
-          StillObject *so;
+          MemoryAllocatedObject mao(___UNTAG(obj));
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
           if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1)
             validate_old_obj (___PSP obj);
 #endif
 
-          if (mo = mao.asMovable()) {
+          if (mao.isMovable()) {
+            MovableObject *mo = mao.asMovable();
             *start = ___TAG(mo->move(___PSP alloc_heap_ptr), ___TYP(obj));
           }
-          else if (so = mao.asStill()) {
+          else if (mao.isStill()) {
+            StillObject *so = mao.asStill();
             if (!so->isMarked())
               still_objs_to_scan = so->mark(still_objs_to_scan);
           }

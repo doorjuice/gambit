@@ -14,32 +14,27 @@ ___WORD* ___memcpy (___WORD* dest, const ___WORD* src, ___SIZE_T words) {
     return dest;
 }
 
-MemoryAllocatedObject::MemoryAllocatedObject(___WORD obj) {
-    assert(___MEM_ALLOCATED(obj));
-    body = ___UNTAG(obj) + ___BODY_OFS;
+MemoryAllocatedObject::MemoryAllocatedObject(___WORD* obj) {
+    body = obj + ___BODY_OFS;
     head = body[-1];
     length = ___HD_WORDS(head);
     subtype = ___HD_SUBTYPE(head);
 }
 
 MovableObject* MemoryAllocatedObject::asMovable() {
-    if (isMovable())
-        return static_cast<MovableObject*>(this);
-    else
-        return NULL;
+    assert(isMovable());
+    return static_cast<MovableObject*>(this);
 }
 
 StillObject* MemoryAllocatedObject::asStill() {
-    if (isStill())
-        return static_cast<StillObject*>(this);
-    else
-        return NULL;
+    assert(isStill());
+    return static_cast<StillObject*>(this);
 }
 
 
 /*---------------------------------------------------------------------------*/
 
-MovableObject::MovableObject(___WORD obj)
+MovableObject::MovableObject(___WORD* obj)
     : MemoryAllocatedObject(obj) {
     assert(isMovable());
 }
@@ -120,13 +115,9 @@ void MovableObject::gatherStats() {
 
 /*---------------------------------------------------------------------------*/
 
-StillObject::StillObject(___WORD obj)
+StillObject::StillObject(___WORD* obj)
     : MemoryAllocatedObject(obj) {
     assert(isStill());
-}
-
-bool StillObject::isMarked() {
-    return body[___STILL_MARK_OFS - ___STILL_BODY_OFS] != -1;
 }
 
 ___WORD StillObject::mark(___WORD scanList) {
