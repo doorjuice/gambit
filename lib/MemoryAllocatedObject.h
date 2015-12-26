@@ -57,11 +57,11 @@ class MemoryAllocatedObject {
     public:
     MemoryAllocatedObject(___WORD obj);
     
-    ___WORD getHead() const {
+    inline ___WORD getHead() const {
         return head;
     }
     
-    int getSubtype() const {
+    inline int getSubtype() const {
         return subtype;
     }
     

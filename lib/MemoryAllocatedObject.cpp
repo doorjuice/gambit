@@ -1,7 +1,9 @@
 #include "MemoryAllocatedObject.h"
 
+#include <assert.h>
+
 MemoryAllocatedObject::MemoryAllocatedObject(___WORD obj) {
-    //assert(___MEM_ALLOCATED(obj)); TODO enable assert
+    assert(___MEM_ALLOCATED(obj));
     body = ___UNTAG(obj) + ___BODY_OFS;
     head = body[-1];
     length = ___HD_WORDS(head);
@@ -35,7 +37,7 @@ StillObject* MemoryAllocatedObject::asStill() {
 
 MovableObject::MovableObject(___WORD obj)
     : MemoryAllocatedObject(obj) {
-    ;
+    assert(___HD_TYP(head) == ___MOVABLE0);
 }
 
 ___SIZE_TS MovableObject::getSize() const {
@@ -119,7 +121,7 @@ ___WORD* MovableObject::moveData(___WORD* dest) {
 
 StillObject::StillObject(___WORD obj)
     : MemoryAllocatedObject(obj) {
-    ;
+    assert(___HD_TYP(head) == ___STILL);
 }
 
 bool StillObject::isMarked() {
@@ -127,7 +129,7 @@ bool StillObject::isMarked() {
 }
 
 ___WORD StillObject::mark(___WORD scanList) {
-    //assert(!isMarked()); TODO
+    assert(!isMarked());
     body[___STILL_MARK_OFS - ___STILL_BODY_OFS] = scanList;
     scanList = ___CAST(___WORD,body - ___STILL_BODY_OFS);
     return scanList;
