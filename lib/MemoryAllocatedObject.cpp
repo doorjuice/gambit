@@ -1,6 +1,18 @@
 #include "MemoryAllocatedObject.h"
 
+/* The following includes are needed for debugging. */
 #include <assert.h>
+#include <string.h>
+
+
+___WORD* ___memcpy (___WORD* dest, const ___WORD* src, ___SIZE_T words) {
+    /* fallback version:
+    while (words-- > 0)
+        *dest++ = *src++;
+    */
+    memcpy(dest, src, words << ___LWS);
+    return dest;
+}
 
 MemoryAllocatedObject::MemoryAllocatedObject(___WORD obj) {
     assert(___MEM_ALLOCATED(obj));
@@ -43,6 +55,10 @@ ___SIZE_TS MovableObject::getSize() const {
 ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
     ___PSGET
     
+#ifdef GATHER_STATS
+    gatherStats();
+#endif
+    
     alloc = requireMemory(___PSP alloc);
     
 #if ___WS == 4
@@ -60,12 +76,7 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
     }
 #endif
 
-#ifdef GATHER_STATS
-    gatherStats();
-#endif
-
-    ___WORD* new_addr = alloc + 1 - ___BODY_OFS;
-    alloc = forwardTo(alloc);
+    alloc = forwardTo(alloc) + getLength();
 
 #if ___WS == 4
     if (padding)
@@ -73,7 +84,7 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
 #endif
 
     alloc_heap_ptr = alloc;
-    return new_addr;
+    return body - ___BODY_OFS;
 }
 
 ___WORD* MovableObject::requireMemory(___PSD ___WORD* alloc) {
@@ -90,6 +101,13 @@ ___WORD* MovableObject::requireMemory(___PSD ___WORD* alloc) {
     return alloc;
 }
 
+___WORD* MovableObject::forwardTo(___WORD* dest) {
+    *dest++ = getHead();
+    body[-1] = ___TAG((dest - ___BODY_OFS), ___FORW);
+    body = ___memcpy(dest, body, getLength());
+    return dest;
+}
+
 void MovableObject::gatherStats() {
     if (getSubtype() == ___sPAIR)
         movable_pair_objs++;
@@ -97,16 +115,6 @@ void MovableObject::gatherStats() {
         movable_subtyped_objs[getLength()]++;
     else
         movable_subtyped_objs[MAX_STAT_SIZE+1]++;
-}
-
-___WORD* MovableObject::forwardTo(___WORD* dest) {
-    //FIXME this method alters the object's state
-    *dest++ = getHead();
-    ___SIZE_TS length = getLength();
-    body[-1] = ___TAG((dest - ___BODY_OFS), ___FORW);
-    while (length-- > 0)
-        *dest++ = *body++;
-    return dest;
 }
 
 
