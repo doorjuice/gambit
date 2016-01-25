@@ -7766,13 +7766,6 @@ typedef struct ___sync_op_struct
     ___WORD volatile arg[2];   /* arguments of the operation */
   } ___sync_op_struct;
 
-inline void ___copy_sync_op_struct(volatile ___sync_op_struct* dest, const ___sync_op_struct* src)
-  {
-    dest->op = src->op;
-    dest->arg[0] = src->arg[0];
-    dest->arg[1] = src->arg[1];
-  }
-
 /* Processor structure */
 
 typedef struct ___processor_state_struct
