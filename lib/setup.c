@@ -1,6 +1,6 @@
 /* File: "setup.c" */
 
-/* Copyright (c) 1994-2015 by Marc Feeley, All Rights Reserved. */
+/* Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved. */
 
 /*
  * This module contains the routines that setup the Scheme program for
@@ -8,7 +8,7 @@
  */
 
 #define ___INCLUDED_FROM_SETUP
-#define ___VERSION 408002
+#define ___VERSION 408003
 #include "gambit.h"
 
 #include "os_base.h"
@@ -2630,25 +2630,70 @@ ___SCMOBJ thunk;)
 }
 
 
+#ifdef ___DEBUG
+
+
+void ___print_source_location
+   ___P((___source_location *loc),
+        (loc)
+___source_location *loc;)
+{
+  ___printf ("%s:%d:", loc->file, loc->line);
+}
+
+
+void ___print_ctrl_flow_history
+   ___P((___processor_state ___ps),
+        (___ps)
+___processor_state ___ps;)
+{
+  int i;
+
+  ___printf ("Most recent control-flow history:\n");
+
+  for (i=0; i<___CTRL_FLOW_HISTORY_LENGTH; i++)
+    {
+      ___source_location *loc =
+        &___ps->ctrl_flow_history[(___ps->ctrl_flow_history_index+i) %
+                                  ___CTRL_FLOW_HISTORY_LENGTH];
+      if (loc->line > 0)
+        {
+          ___print_source_location (loc);
+          ___printf ("\n");
+        }
+    }
+}
+
+
 #ifdef ___DEBUG_HOST_CHANGES
 
 ___EXP_FUNC(void,___register_host_entry)
    ___P((___PSD
          ___WORD start,
-         char *module_name),
+         char *module_name,
+         char *file,
+         int line),
         (___PSV
          start,
-         module_name)
+         module_name,
+         file,
+         line)
 ___PSDKR
 ___WORD start;
-char *module_name;)
+char *module_name;
+char *file;
+int line;)
 {
-#ifdef ___DEBUG
-
   ___PSGET
   ___SCMOBJ sym;
+  ___source_location loc;
 
-  ___printf ("*** Entering ");
+  loc.file = file;
+  loc.line = line;
+
+  ___print_source_location (&loc);
+
+  ___printf (" ");
 
   if ((sym = ___find_global_var_bound_to (___ps->pc)) != ___NUL ||
       (sym = ___find_global_var_bound_to (start)) != ___NUL)
@@ -2670,8 +2715,10 @@ char *module_name;)
                ___CAST(___label_struct*,___ps->pc) -
                ___CAST(___label_struct*,start));
 
-#endif
 }
+
+#endif
+
 
 #endif
 
@@ -3752,9 +3799,11 @@ ___HIDDEN void setup_dynamic_linking ___PVOID
   ___GSTATE->___propagate_error
     = ___propagate_error;
 
+#ifdef ___DEBUG
 #ifdef ___DEBUG_HOST_CHANGES
   ___GSTATE->___register_host_entry
     = ___register_host_entry;
+#endif
 #endif
 
   ___GSTATE->___raise_interrupt_pstate
@@ -3793,10 +3842,16 @@ ___HIDDEN void setup_dynamic_linking ___PVOID
   ___GSTATE->___free_mem_code
     = ___free_mem_code;
 
-#ifdef ___USE_emulated_compare_and_swap_word
+#ifdef ___USE_emulated_sync
 
   ___GSTATE->___emulated_compare_and_swap_word
     = ___emulated_compare_and_swap_word;
+
+  ___GSTATE->___emulated_fetch_and_add_word
+    = ___emulated_fetch_and_add_word;
+
+  ___GSTATE->___emulated_fetch_and_clear_word
+    = ___emulated_fetch_and_clear_word;
 
 #endif
 

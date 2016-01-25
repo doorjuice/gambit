@@ -2,7 +2,7 @@
 
 ;;; File: "_t-univ-2.scm"
 
-;;; Copyright (c) 2011-2015 by Marc Feeley, All Rights Reserved.
+;;; Copyright (c) 2011-2016 by Marc Feeley, All Rights Reserved.
 ;;; Copyright (c) 2012 by Eric Thivierge, All Rights Reserved.
 
 (include "generic.scm")
@@ -470,6 +470,24 @@
               (index (^local-var 'index))
               (old (^local-var 'old)))
 
+          (define (run mod-descr)
+            (^ (^assign (gvm-state-sp-use ctx 'wr)
+                        (^int -1))
+
+               (^push (univ-end-of-cont-marker ctx))
+
+               (^assign (^rts-field-use 'r0)
+                        (^rts-jumpable-use 'underflow))
+
+               (^assign (^rts-field-use 'nargs)
+                        (^int 0))
+
+               (^expr-statement
+                (^call-prim
+                 (^rts-method-use 'trampoline)
+                 (^cast*-jumpable
+                  (^vector-ref mod-descr (^int 1)))))))
+
           (^ (^var-declaration
               'str
               name
@@ -482,7 +500,9 @@
                          name
                          (^null)))
 
-             (^if (^not (^parens (^null? info)))
+             (^if (^null? info)
+
+                  (run module_descr)
 
                   (^ (^var-declaration
                       'int
@@ -522,23 +542,9 @@
                                                     (^int 1)))
                                                (^int 0)))
 
-                                     (^push (univ-end-of-cont-marker ctx))
-
-                                     (^assign (^rts-field-use 'r0)
-                                              (^rts-jumpable-use 'underflow))
-
-                                     (^assign (^rts-field-use 'nargs)
-                                              (^int 0))
-
-                                     (^expr-statement
-                                      (^call-prim
-                                       (^rts-method-use 'trampoline)
-                                       (^cast*-jumpable
-                                        (^vector-ref
-                                         (^array-index
-                                          (^rts-field-use 'module_table)
-                                          (^int 0))
-                                         (^int 1))))))))))))))))
+                                     (run (^array-index
+                                           (^rts-field-use 'module_table)
+                                           (^int 0))))))))))))))
 
     ((modlinkinfo)
      (rts-class
@@ -3389,21 +3395,32 @@ EOF
      (compiler-internal-error
       "univ-main-defs, unknown target"))))
 
-(define (univ-rtlib-defs ctx mods-and-flags)
-  (let ((init
-         (^expr-statement
-          (^call-prim
-           (^rts-method-use 'module_registry_init)
-           (^array-literal
-            'modlinkinfo
-            (map-index
-             (lambda (x i)
-               (^new (^type 'modlinkinfo) (^str (car x)) (^int i)))
-             mods-and-flags))))))
-    (univ-add-init
-     (univ-rtlib-gen ctx)
-     (lambda (ctx)
-       init))))
+(define (univ-rtlib-init ctx mods-and-flags)
+
+  ;; automatically defined global variables
+  (univ-glo-use ctx '##vm-main-module-id 'wr)
+  (univ-glo-use ctx '##program-descr 'wr)
+
+  (^expr-statement
+   (^call-prim
+    (^rts-method-use 'module_registry_init)
+    (^array-literal
+     'modlinkinfo
+     (map-index
+      (lambda (x i)
+        (let ((name (car x)))
+          (univ-glo-use ctx
+                        (string->symbol
+                         (string-append module-prefix name))
+                        'rd)
+          (^new (^type 'modlinkinfo) (^str name) (^int i))))
+      mods-and-flags)))))
+
+(define (univ-rtlib-defs ctx init)
+  (univ-add-init
+   (univ-rtlib-gen ctx)
+   (lambda (ctx)
+     init)))
 
 (define (univ-rtlib-gen ctx)
 

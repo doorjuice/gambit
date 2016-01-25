@@ -2,7 +2,7 @@
 
 ;;; File: "main.scm"
 
-;;; Copyright (c) 1994-2015 by Marc Feeley, All Rights Reserved.
+;;; Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved.
 
 ;;;----------------------------------------------------------------------------
 
@@ -123,7 +123,8 @@
            (link-opt?    (##assq 'link options))
            (exe-opt?     (##assq 'exe options))
            (obj-opt?     (##assq 'obj options))
-           (dynamic-opt? (##assq 'dynamic options)))
+           (dynamic-opt? (##assq 'dynamic options))
+           (warnings-opt? (##assq 'warnings options)))
       (if (##fx< 1 (##fx+
                          (if c-opt? 1 0)
                          (if link-opt? 1 0)
@@ -434,24 +435,30 @@
                                                     (if (and output
                                                              (##eq? type 'link))
                                                         (link-flat gen-files
-                                                                   output: output)
-                                                        (link-flat gen-files))
+                                                                   output: output
+                                                                   warnings?: warnings-opt?)
+                                                        (link-flat gen-files
+                                                                   warnings?: warnings-opt?))
                                                     (if (and output
                                                              (##eq? type 'link))
                                                         (if base
                                                             (link-incremental
                                                              gen-files
                                                              output: output
-                                                             base: base)
+                                                             base: base
+                                                             warnings?: warnings-opt?)
                                                             (link-incremental
                                                              gen-files
-                                                             output: output))
+                                                             output: output
+                                                             warnings?: warnings-opt?))
                                                         (if base
                                                             (link-incremental
                                                              gen-files
-                                                             base: base)
+                                                             base: base
+                                                             warnings?: warnings-opt?)
                                                             (link-incremental
-                                                             gen-files))))))
+                                                             gen-files
+                                                             warnings?: warnings-opt?))))))
                                           (and link-file
                                                (begin
                                                  (add-gen-file link-file)

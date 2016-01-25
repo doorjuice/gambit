@@ -1,10 +1,10 @@
 # Configure template for Gambit system.
 
-# Copyright (c) 1994-2015 by Marc Feeley, All Rights Reserved.
+# Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved.
 
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(Gambit,v4.8.2,gambit@iro.umontreal.ca,gambit-v4_8_2)
+AC_INIT(Gambit,v4.8.3,gambit@iro.umontreal.ca,gambit-v4_8_3)
 
 AC_CONFIG_HEADERS(include/config.h)
 
@@ -17,7 +17,7 @@ AC_SUBST(PACKAGE_STRING)
 AC_SUBST(PACKAGE_BUGREPORT)
 AC_SUBST(PACKAGE_TARNAME)
 
-AC_COPYRIGHT([[Copyright (c) 1994-2015 by Marc Feeley, All Rights Reserved.]])
+AC_COPYRIGHT([[Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved.]])
 
 AC_CONFIG_SRCDIR(include/gambit.h.in)
 
@@ -1383,7 +1383,7 @@ else
   AC_CHECK_FUNCS(hstrerror)
 
   case "$target_os" in
-    OpenBSD*)
+    openbsd*)
       # OpenBSD/mips64(el) does have get_fpc_csr(), but lacks union fpc_csr.
       ;;
     *)
@@ -1489,7 +1489,7 @@ if test "$ENABLE_THREAD_SYSTEM" != no; then
 
     TLS_CLASS="none"
 
-    for tls_class in "__thread" "__declspec(thread)"; do
+    for tls_class in "_Thread_local" "__thread" "__declspec(thread)"; do
       AC_TRY_COMPILE([
         #include <stdlib.h>
         ] $tls_class [ int foo;
