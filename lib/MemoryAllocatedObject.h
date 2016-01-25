@@ -51,7 +51,7 @@ class MemoryAllocatedObject {
     protected:
     ___WORD* body;
 
-  	private:
+    private:
     ___WORD head;
     ___SIZE_TS length;
     int subtype;

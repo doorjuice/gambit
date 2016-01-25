@@ -12,6 +12,7 @@
 #include "mem.h"
 #include "c_intf.h"
 
+#include "MemorySection.h"
 #include "MemoryAllocatedObject.h"
 
 /* The following includes are needed for debugging. */
@@ -1633,13 +1634,7 @@ ___msection *s;)
 }
 
 
-___HIDDEN ___WORD *start_of_tospace
-   ___P((___virtual_machine_state ___vms,
-         ___msection *s),
-        (___vms,
-         s)
-___virtual_machine_state ___vms;
-___msection *s;)
+___HIDDEN ___WORD *start_of_tospace(___virtual_machine_state ___vms, ___msection *s)
 {
 #undef ___VMSTATE_MEM
 #define ___VMSTATE_MEM(var) ___vms->mem.var
