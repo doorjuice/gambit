@@ -1,6 +1,6 @@
-#include "MemorySection.h"
+#include "MemoryManager.h"
 
-void MemorySection::next_heap_msection(___processor_state ___ps)
+void MemoryManager::next_heap_msection(___processor_state ___ps)
 {
   if (heap_msection != 0)
     {
@@ -14,7 +14,7 @@ void MemorySection::next_heap_msection(___processor_state ___ps)
   alloc_heap_ptr = alloc_heap_start;
 }
 
-___msection* MemorySection::next_msection(___processor_state ___ps, ___msection *ms)
+___msection* MemoryManager::next_msection(___processor_state ___ps, ___msection *ms)
 {
   ___msection *result;
 
@@ -38,7 +38,7 @@ ___msection* MemorySection::next_msection(___processor_state ___ps, ___msection 
   return result;
 }
 
-___WORD* MemorySection::start_of_tospace(___virtual_machine_state ___vms, ___msection *s)
+___WORD* MemoryManager::start_of_tospace(___virtual_machine_state ___vms, ___msection *s)
 {
 #undef ___VMSTATE_MEM
 #define ___VMSTATE_MEM(var) ___vms->mem.var
@@ -52,7 +52,7 @@ ___WORD* MemorySection::start_of_tospace(___virtual_machine_state ___vms, ___mse
 #define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
 }
 
-void MemorySection::fatal_heap_overflow()
+void MemoryManager::fatal_heap_overflow()
 {
   char *msgs[2];
   msgs[0] = "Heap overflow";

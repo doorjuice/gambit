@@ -12,7 +12,7 @@
 #include "mem.h"
 #include "c_intf.h"
 
-#include "MemorySection.h"
+#include "MemoryManager.h"
 #include "MemoryAllocatedObject.h"
 
 /* The following includes are needed for debugging. */

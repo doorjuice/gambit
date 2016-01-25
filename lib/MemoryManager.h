@@ -1,5 +1,5 @@
-#ifndef MemorySection_H
-#define MemorySection_H
+#ifndef MemoryManager_H
+#define MemoryManager_H
 
 #include "gambit.h"
 #include "mem.h"
@@ -9,7 +9,7 @@
 
 extern void ___fatal_error(char** msgs);
 
-class MemorySection {
+class MemoryManager {
     
     public:
     void next_heap_msection(___processor_state ___ps);
