@@ -1,6 +1,8 @@
 #include "MemoryBroker.h"
 
 
+const unsigned int MemoryBroker::MSECTION_SIZE = 131072; //TODO sync with defined value
+
 ___msection* MemoryBroker::next_msection() {
   ___msection *result;
 
@@ -19,7 +21,7 @@ ___msection* MemoryBroker::next_msection() {
 
 ___WORD* MemoryBroker::start_of_tospace(___msection *s) {
   if (tospace_at_top_)
-    return s->base + (___MSECTION_SIZE>>1);
+    return s->base + (MSECTION_SIZE>>1);
   else
     return s->base;
 }

@@ -2,10 +2,6 @@
 
 #include "MemoryBroker.h"
 
-#ifndef ___MSECTION_SIZE
-#define ___MSECTION_SIZE 131072
-#endif //FIXME replace with a static class constant
-
 
 void MemoryManager::next_heap_msection()
 {
@@ -24,7 +20,7 @@ void MemoryManager::next_heap_msection()
   heap_msection_ = next_section;
   
   alloc_heap_start_ = broker->start_of_tospace(heap_msection_);
-  alloc_heap_limit_ = alloc_heap_start_ + (___MSECTION_SIZE>>1);
+  alloc_heap_limit_ = alloc_heap_start_ + (MemoryBroker::MSECTION_SIZE>>1);
   alloc_heap_ptr_ = alloc_heap_start_;
 }
 
