@@ -9,18 +9,18 @@
 
 extern void ___fatal_error(char** msgs);
 
-class MemoryManager : private ___msections {
+class MemoryBroker;
+
+class MemoryManager : public ___pstate_mem {
     
     private:
-    const ___processor_state ___ps;
+    MemoryBroker* const broker;
     
     public:
-    MemoryManager(___processor_state ps);
+    MemoryManager(MemoryBroker* memory_broker);
     void next_heap_msection();
     
     private:
-    ___msection *next_msection(___msection *ms);
-    ___WORD *start_of_tospace(___msection *s);
     void fatal_heap_overflow();
 };
 

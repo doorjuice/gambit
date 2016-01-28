@@ -1,5 +1,7 @@
 #include "MemoryAllocatedObject.h"
 
+#include "MemoryManager.h"
+
 /* The following includes are needed for debugging. */
 #include <assert.h>
 #include <string.h>
