@@ -2,10 +2,10 @@
 
 #include "MemoryBroker.h"
 
+#ifndef ___MSECTION_SIZE
+#define ___MSECTION_SIZE 131072
+#endif //FIXME replace with a static class constant
 
-MemoryManager::MemoryManager(MemoryBroker* memory_broker)
-: broker(memory_broker) 
-{ }
 
 void MemoryManager::next_heap_msection()
 {

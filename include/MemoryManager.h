@@ -1,8 +1,7 @@
 #ifndef MemoryManager_H
 #define MemoryManager_H
 
-#include "gambit.h"
-#include "mem.h"
+#include "mem_struct.h"
 
 
 /*---------------------------------------------------------------------------*/
@@ -12,12 +11,12 @@ extern void ___fatal_error(char** msgs);
 class MemoryBroker;
 
 class MemoryManager : public ___pstate_mem {
+    friend struct ___virtual_machine_state_struct;
     
     private:
-    MemoryBroker* const broker;
+    MemoryBroker* broker;
     
     public:
-    MemoryManager(MemoryBroker* memory_broker);
     void next_heap_msection();
     
     private:

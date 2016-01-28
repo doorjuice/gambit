@@ -1,7 +1,7 @@
 #ifndef MemoryBroker_H
 #define MemoryBroker_H
 
-#include "gambit.h"
+#include "mem_struct.h"
 
 
 /*---------------------------------------------------------------------------*/
