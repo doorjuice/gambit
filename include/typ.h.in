@@ -1,0 +1,627 @@
+#ifndef TYP_H
+#define TYP_H
+
+#include "env.h"
+
+/*
+ * Determine the number of bits in various integer and floating point
+ * types and define appropriate macros accordingly.  The macro for a
+ * given type is not defined if the type is not supported by the C
+ * compiler or if it is not 8, 16, 32 or 64 bits wide.
+ */
+
+#ifndef ___CHAR_WIDTH
+#ifdef ___DONT_HAVE_LIMITS_H
+
+/*
+ * If the file "limits.h" is not available then the symbol
+ * ___DONT_HAVE_LIMITS_H must be defined (for example on the compiler's
+ * command line) and the following definitions will be used:
+ */
+
+#define ___CHAR_WIDTH     8   /* if needed, edit to suit your platform */
+#define ___SHORT_WIDTH    16
+#define ___INT_WIDTH      32
+#define ___LONG_WIDTH     32
+
+#ifdef __GNUC__
+#define ___LONGLONG_WIDTH 64
+#endif
+
+#else
+
+/*
+ * If the file "limits.h" is available then it contains macros
+ * defining the range of the integer types.  The following
+ * preprocessor conditional definitions are written so that they will
+ * work regardless of the number of bits in the integer types
+ * supported by the compiler (many compilers for 32 bit machines give
+ * an error for C preprocessor expressions like ULONG_MAX >> 32 or
+ * ULLONG_MAX == 18446744073709551615UL).  Some parentheses seem
+ * redundant, but they are required for MS Visual C/C++ whose
+ * preprocessor signals an error on: x >> 8 >> 8.
+ */
+
+#include <limits.h>
+
+#ifdef UCHAR_MAX
+#if (UCHAR_MAX & 255) == 255
+#if (UCHAR_MAX >> 8) == 0
+#define ___CHAR_WIDTH 8
+#else
+#if ((UCHAR_MAX >> 8) & 255) == 255
+#if ((UCHAR_MAX >> 8) >> 8) == 0
+#define ___CHAR_WIDTH 16
+#else
+#if (((UCHAR_MAX >> 8) >> 8) & 255) == 255
+#if (((UCHAR_MAX >> 8) >> 8) >> 8) != 0
+#if ((((UCHAR_MAX >> 8) >> 8) >> 8) & 255) == 255
+#if ((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) == 0
+#define ___CHAR_WIDTH 32
+#else
+#if (((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if (((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((((UCHAR_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) == 0
+#define ___CHAR_WIDTH 64
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#ifdef USHRT_MAX
+#if (USHRT_MAX & 255) == 255
+#if (USHRT_MAX >> 8) == 0
+#define ___SHORT_WIDTH 8
+#else
+#if ((USHRT_MAX >> 8) & 255) == 255
+#if ((USHRT_MAX >> 8) >> 8) == 0
+#define ___SHORT_WIDTH 16
+#else
+#if (((USHRT_MAX >> 8) >> 8) & 255) == 255
+#if (((USHRT_MAX >> 8) >> 8) >> 8) != 0
+#if ((((USHRT_MAX >> 8) >> 8) >> 8) & 255) == 255
+#if ((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) == 0
+#define ___SHORT_WIDTH 32
+#else
+#if (((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if (((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((((USHRT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) == 0
+#define ___SHORT_WIDTH 64
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#ifdef UINT_MAX
+#if (UINT_MAX & 255) == 255
+#if (UINT_MAX >> 8) == 0
+#define ___INT_WIDTH 8
+#else
+#if ((UINT_MAX >> 8) & 255) == 255
+#if ((UINT_MAX >> 8) >> 8) == 0
+#define ___INT_WIDTH 16
+#else
+#if (((UINT_MAX >> 8) >> 8) & 255) == 255
+#if (((UINT_MAX >> 8) >> 8) >> 8) != 0
+#if ((((UINT_MAX >> 8) >> 8) >> 8) & 255) == 255
+#if ((((UINT_MAX >> 8) >> 8) >> 8) >> 8) == 0
+#define ___INT_WIDTH 32
+#else
+#if (((((UINT_MAX >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if (((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((((UINT_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) == 0
+#define ___INT_WIDTH 64
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#ifdef ULONG_MAX
+#if (ULONG_MAX & 255) == 255
+#if (ULONG_MAX >> 8) == 0
+#define ___LONG_WIDTH 8
+#else
+#if ((ULONG_MAX >> 8) & 255) == 255
+#if ((ULONG_MAX >> 8) >> 8) == 0
+#define ___LONG_WIDTH 16
+#else
+#if (((ULONG_MAX >> 8) >> 8) & 255) == 255
+#if (((ULONG_MAX >> 8) >> 8) >> 8) != 0
+#if ((((ULONG_MAX >> 8) >> 8) >> 8) & 255) == 255
+#if ((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) == 0
+#define ___LONG_WIDTH 32
+#else
+#if (((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if (((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((((ULONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) == 0
+#define ___LONG_WIDTH 64
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#ifdef __GNUC__
+
+#define ___LONGLONG_WIDTH 64
+
+#else
+
+/* Handle some non ISO C99 compilers that nevertheless support "long long". */
+
+#ifndef ULLONG_MAX
+#ifdef ULONGLONG_MAX
+#define ULLONG_MAX ULONGLONG_MAX
+#else
+#ifdef ULONG_LONG_MAX
+#define ULLONG_MAX ULONG_LONG_MAX
+#endif
+#endif
+#endif
+
+#ifdef ULLONG_MAX
+#if (ULLONG_MAX & 255) == 255
+#if (ULLONG_MAX >> 8) == 0
+#define ___LONGLONG_WIDTH 8
+#else
+#if ((ULLONG_MAX >> 8) & 255) == 255
+#if ((ULLONG_MAX >> 8) >> 8) == 0
+#define ___LONGLONG_WIDTH 16
+#else
+#if (((ULLONG_MAX >> 8) >> 8) & 255) == 255
+#if (((ULLONG_MAX >> 8) >> 8) >> 8) != 0
+#if ((((ULLONG_MAX >> 8) >> 8) >> 8) & 255) == 255
+#if ((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) == 0
+#define ___LONGLONG_WIDTH 32
+#else
+#if (((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if (((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if (((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) != 0
+#if ((((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) & 255) == 255
+#if ((((((((ULLONG_MAX >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) >> 8) == 0
+#define ___LONGLONG_WIDTH 64
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#endif
+
+#endif
+
+/*
+ * If the "long long" type is not supported, then substitute the type
+ * "long".
+ */
+
+#ifndef ___LONGLONG_WIDTH
+#define ___LONGLONG_WIDTH ___LONG_WIDTH
+#define ___LONGLONG long
+#define ___ULONGLONG unsigned long
+#else
+#define ___LONGLONG long long
+#define ___ULONGLONG unsigned long long
+#endif
+
+/*
+ * Some old C compilers do not support the "signed char" and "wchar_t"
+ * types.  The following preprocessor directives allow these types to
+ * be redefined (such as on the C compiler's command line, in
+ * "config.h", ...).
+ */
+
+#ifndef ___SCHAR
+#define ___SCHAR signed char
+#endif
+
+#ifndef ___WCHAR
+#ifdef ___DONT_HAVE_WCHAR_H
+
+/*
+ * If the file "wchar.h" is not available then the symbol
+ * ___DONT_HAVE_WCHAR_H must be defined (for example on the compiler's
+ * command line) and the following definitions will be used:
+ */
+
+#define ___WCHAR unsigned char
+#define ___WCHAR_MIN 0
+#define ___WCHAR_MAX ((1<<___CHAR_WIDTH)-1)
+
+#else
+
+/*
+ * If the file "wchar.h" is available then it should contain macros
+ * defining the range of the wchar_t type.
+ */
+
+#include <wchar.h>
+
+#define ___WCHAR wchar_t
+
+#ifdef WCHAR_MIN
+#define ___WCHAR_MIN WCHAR_MIN
+#else
+#define ___WCHAR_MIN 0
+#endif
+
+#ifdef WCHAR_MAX
+#define ___WCHAR_MAX WCHAR_MAX
+#else
+#ifdef UINT_MAX
+#define ___WCHAR_MAX UINT_MAX
+#else
+#define ___WCHAR_MAX ((1<<___CHAR_WIDTH)-1)
+#endif
+#endif
+
+#endif
+#endif
+
+#ifdef ___DONT_HAVE_FLOAT_H
+
+/*
+ * If the file "float.h" is not available then the symbol
+ * ___DONT_HAVE_FLOAT_H must be defined (for example on the compiler's
+ * command line) and the following definitions will be used:
+ */
+
+#define ___FLOAT_WIDTH  32   /* if needed, edit to suit your platform */
+#define ___DOUBLE_WIDTH 64
+
+#else
+
+/*
+ * If the file "float.h" is available then it contains macros defining
+ * the range of the floating point types.  The following preprocessor
+ * conditional definitions are not completely correct (and may not
+ * even compile properly because it is possible that FLT_MAX_EXP and
+ * DBL_MAX_EXP are not constant expressions).  However, it appears to
+ * work on a wide range of platforms.
+ */
+
+#include <float.h>
+
+#ifdef FLT_MAX_EXP
+#if FLT_MAX_EXP == 128
+#define ___FLOAT_WIDTH 32
+#else
+#if FLT_MAX_EXP == 1024
+#define ___FLOAT_WIDTH 64
+#endif
+#endif
+#endif
+
+#ifdef DBL_MAX_EXP
+#if DBL_MAX_EXP == 128
+#define ___DOUBLE_WIDTH 32
+#else
+#if DBL_MAX_EXP == 1024
+#define ___DOUBLE_WIDTH 64
+#endif
+#endif
+#endif
+
+#endif
+#endif
+
+/*
+ * Size of pointers.
+ *
+ * ___VOIDSTAR_WIDTH must be equal to sizeof(void*) * ___CHAR_WIDTH.
+ * This value can't be computed with the "sizeof" operator because it
+ * must be known at macro expansion time.  If in doubt just do
+ *
+ *  #define ___VOIDSTAR_WIDTH ___LONG_WIDTH
+ *
+ */
+
+#ifndef ___VOIDSTAR_WIDTH
+#define ___VOIDSTAR_WIDTH @CONF_VOIDSTAR_WIDTH@
+#endif
+
+#if ___VOIDSTAR_WIDTH == 32
+#undef ___USE_32_BIT_ADDR
+#define ___USE_32_BIT_ADDR
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
+/*
+ * The following symbols must be defined to reflect the integer and
+ * floating-point data types supported by the C compiler.  A symbol is
+ * only defined if the data type exists.  At least ___F64 and one of
+ * the pairs ___S32/___U32 and ___S64/___U64 must be defined.
+ *
+ *  define ___S8 as the signed integer type of exactly 8 bits
+ *  define ___U8 as the unsigned integer type of exactly 8 bits
+ *  define ___SM8 as the signed integer type of at least 8 bits
+ *  define ___UM8 as the unsigned integer type of at least 8 bits
+ *
+ *  define ___S16 as the signed integer type of exactly 16 bits
+ *  define ___U16 as the unsigned integer type of exactly 16 bits
+ *  define ___SM16 as the signed integer type of at least 16 bits
+ *  define ___UM16 as the unsigned integer type of at least 16 bits
+ *
+ *  define ___S32 as the signed integer type of exactly 32 bits
+ *  define ___U32 as the unsigned integer type of exactly 32 bits
+ *  define ___SM32 as the signed integer type of at least 32 bits
+ *  define ___UM32 as the unsigned integer type of at least 32 bits
+ *
+ *  define ___S64 as the signed integer type of exactly 64 bits
+ *  define ___U64 as the unsigned integer type of exactly 64 bits
+ *  define ___SM64 as the signed integer type of at least 64 bits
+ *  define ___UM64 as the unsigned integer type of at least 64 bits
+ *
+ *  define ___F32 as the 32 bit floating-point type
+ *  define ___F64 as the 64 bit floating-point type
+ */
+
+/*
+ * First we make sure that the width of all the integer and
+ * floating-point types is known.
+ */
+
+#ifndef ___CHAR_WIDTH
+#error "The definition for ___CHAR_WIDTH is missing"
+#endif
+
+#ifndef ___SHORT_WIDTH
+#error "The definition for ___SHORT_WIDTH is missing"
+#endif
+
+#ifndef ___INT_WIDTH
+#error "The definition for ___INT_WIDTH is missing"
+#endif
+
+#ifndef ___LONG_WIDTH
+#error "The definition for ___LONG_WIDTH is missing"
+#endif
+
+#ifndef ___LONGLONG_WIDTH
+#error "The definition for ___LONGLONG_WIDTH is missing"
+#endif
+
+#ifndef ___FLOAT_WIDTH
+#error "The definition for ___FLOAT_WIDTH is missing"
+#endif
+
+#ifndef ___DOUBLE_WIDTH
+#error "The definition for ___DOUBLE_WIDTH is missing"
+#endif
+
+#if ___INT_WIDTH == 8
+#define ___S8 int
+#define ___U8 unsigned int
+#else
+#if ___LONG_WIDTH == 8
+#define ___S8 long
+#define ___U8 unsigned long
+#else
+#if ___SHORT_WIDTH == 8
+#define ___S8 short
+#define ___U8 unsigned short
+#else
+#if ___CHAR_WIDTH == 8
+#define ___S8 ___SCHAR
+#define ___U8 unsigned char
+#else
+#if ___LONGLONG_WIDTH == 8
+#define ___S8 ___LONGLONG
+#define ___U8 unsigned ___LONGLONG
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#if ___INT_WIDTH == 16
+#define ___S16 int
+#define ___U16 unsigned int
+#else
+#if ___LONG_WIDTH == 16
+#define ___S16 long
+#define ___U16 unsigned long
+#else
+#if ___SHORT_WIDTH == 16
+#define ___S16 short
+#define ___U16 unsigned short
+#else
+#if ___CHAR_WIDTH == 16
+#define ___S16 ___SCHAR
+#define ___U16 unsigned char
+#else
+#if ___LONGLONG_WIDTH == 16
+#define ___S16 ___LONGLONG
+#define ___U16 unsigned ___LONGLONG
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#if ___INT_WIDTH == 32
+#define ___S32 int
+#define ___U32 unsigned int
+#else
+#if ___LONG_WIDTH == 32
+#define ___S32 long
+#define ___U32 unsigned long
+#else
+#if ___SHORT_WIDTH == 32
+#define ___S32 short
+#define ___U32 unsigned short
+#else
+#if ___CHAR_WIDTH == 32
+#define ___S32 ___SCHAR
+#define ___U32 unsigned char
+#else
+#if ___LONGLONG_WIDTH == 32
+#define ___S32 ___LONGLONG
+#define ___U32 unsigned ___LONGLONG
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#if ___INT_WIDTH == 64
+#define ___S64 int
+#define ___U64 unsigned int
+#else
+#if ___LONG_WIDTH == 64
+#define ___S64 long
+#define ___U64 unsigned long
+#else
+#if ___SHORT_WIDTH == 64
+#define ___S64 short
+#define ___U64 unsigned short
+#else
+#if ___CHAR_WIDTH == 64
+#define ___S64 ___SCHAR
+#define ___U64 unsigned char
+#else
+#if ___LONGLONG_WIDTH == 64
+#define ___S64 ___LONGLONG
+#define ___U64 unsigned ___LONGLONG
+#endif
+#endif
+#endif
+#endif
+#endif
+
+#if ___FLOAT_WIDTH == 32
+#define ___F32 float
+#else
+#if ___DOUBLE_WIDTH == 32
+#define ___F32 double
+#endif
+#endif
+
+#if ___DOUBLE_WIDTH == 64
+#define ___F64 double
+#else
+#if ___FLOAT_WIDTH == 64
+#define ___F64 float
+#endif
+#endif
+
+#ifdef ___S64
+#define ___BUILTIN_64BIT_INT_TYPE
+#define ___SM64 ___S64
+#define ___UM64 ___U64
+#endif
+
+#ifdef ___S32
+#define ___SM32 ___S32
+#define ___UM32 ___U32
+#else
+#define ___SM32 ___SM64
+#define ___UM32 ___UM64
+#endif
+
+#ifdef ___S16
+#define ___SM16 ___S16
+#define ___UM16 ___U16
+#else
+#define ___SM16 ___SM32
+#define ___UM16 ___UM32
+#endif
+
+#ifdef ___S8
+#define ___SM8 ___S8
+#define ___UM8 ___U8
+#else
+#define ___SM8 ___SM16
+#define ___UM8 ___UM16
+#endif
+
+#endif
+
