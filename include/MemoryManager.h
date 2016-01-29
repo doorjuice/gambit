@@ -17,6 +17,8 @@ class MemoryManager : public ___pstate_mem {
     MemoryBroker* broker;
     
     public:
+    static void reportFatalOverflow(char* msg);
+    
     inline void updateHeapPtr(___WORD* allocPtr) {
         alloc_heap_ptr_ = allocPtr;
     }
@@ -24,10 +26,6 @@ class MemoryManager : public ___pstate_mem {
     ___WORD* requireHeapSpace(const ___SIZE_TS size);
     ___WORD* nextHeapSection();
     ___WORD* nextStackSection();
-        
-    private:
-    void fatalOverflow(char* msg);
 };
 
 #endif
-

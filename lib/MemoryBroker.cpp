@@ -21,6 +21,10 @@ ___msection* MemoryBroker::nextMemorySection() {
     return result;
 }
 
-___WORD* MemoryBroker::start_of_tospace(___msection *ms) const {
+___WORD* MemoryBroker::getStartOfTospace(___msection* ms) const {
     return ms->base + (tospace_at_top_ ? MSECTION_HALF : 0);
+}
+
+___WORD* MemoryBroker::getStartOfFromspace(___msection* ms) const {
+    return ms->base + (tospace_at_top_ ? 0 : MSECTION_HALF);
 }

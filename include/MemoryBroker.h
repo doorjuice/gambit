@@ -8,7 +8,7 @@
 
 class MemoryBroker : public ___vmstate_mem {
     
-    private:
+    public: //TODO replace me with a proper constructor and private scope
     ___WORD tospaceOffset;
     
     public:
@@ -24,7 +24,10 @@ class MemoryBroker : public ___vmstate_mem {
     }
     
     ___msection* nextMemorySection();
-    ___WORD* start_of_tospace(___msection *ms) const;
+    
+    //DEPRECATED
+    ___WORD* getStartOfTospace(___msection* ms) const;
+    ___WORD* getStartOfFromspace(___msection* ms) const;
 };
 
 #endif

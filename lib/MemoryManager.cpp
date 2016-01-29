@@ -3,6 +3,11 @@
 #include "MemoryBroker.h"
 
 
+void MemoryManager::reportFatalOverflow(char* msg) {
+    char* msgs[] = {msg, NULL};
+    ___fatal_error(msgs);
+}
+
 ___WORD* MemoryManager::requireHeapSpace(const ___SIZE_TS size) {
     while (alloc_heap_ptr_ + size > alloc_heap_limit_)
         nextHeapSection();
@@ -18,7 +23,7 @@ ___WORD* MemoryManager::nextHeapSection() {
     ___msection* nextSection = broker->nextMemorySection();
     if (nextSection == NULL) {
         if (heap_msection_ == stack_msection_)
-            fatalOverflow("Heap overflow");
+            reportFatalOverflow("Heap overflow");
         nextSection = stack_msection_;
     }
     heap_msection_ = nextSection;
@@ -37,7 +42,7 @@ ___WORD* MemoryManager::nextStackSection() {
     ___msection* nextSection = broker->nextMemorySection();
     if (nextSection == NULL) {
         if (stack_msection_ == heap_msection_)
-            fatalOverflow("Stack overflow");
+            reportFatalOverflow("Stack overflow");
         nextSection = heap_msection_;
     }
     stack_msection_ = nextSection;
@@ -46,9 +51,3 @@ ___WORD* MemoryManager::nextStackSection() {
     alloc_stack_start_ = alloc_stack_limit_ + MemoryBroker::MSECTION_HALF;
     return alloc_stack_ptr_ = alloc_stack_start_;
 }
-
-void MemoryManager::fatalOverflow(char* msg) {
-    char* msgs[] = {msg, NULL};
-    ___fatal_error(msgs);
-}
-

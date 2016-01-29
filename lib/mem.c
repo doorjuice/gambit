@@ -1613,53 +1613,6 @@ void *data;)
 
 /*---------------------------------------------------------------------------*/
 
-___HIDDEN ___WORD *start_of_fromspace
-   ___P((___virtual_machine_state ___vms,
-         ___msection *s),
-        (___vms,
-         s)
-___virtual_machine_state ___vms;
-___msection *s;)
-{
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  if (tospace_at_top)
-    return s->base;
-  else
-    return s->base + (___MSECTION_SIZE>>1);
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
-}
-
-
-___HIDDEN ___WORD *start_of_tospace(___virtual_machine_state ___vms, ___msection *s)
-{
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  if (tospace_at_top)
-    return s->base + (___MSECTION_SIZE>>1);
-  else
-    return s->base;
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
-}
-
-
-___HIDDEN void fatal_heap_overflow ___PVOID
-{
-  char *msgs[2];
-  msgs[0] = "Heap overflow";
-  msgs[1] = 0;
-  ___fatal_error (msgs);
-}
-
-
-/*---------------------------------------------------------------------------*/
-
 #ifdef ___DEBUG
 
 
@@ -2327,7 +2280,7 @@ ___virtual_machine_state ___vms;)
 
   int i;
   for (i=0; i<the_msections->nb_sections; i++)
-    zap_section (start_of_fromspace (___vms, the_msections->sections[i]),
+    zap_section (___vms->mem.getStartOfFromspace(the_msections->sections[i]),
                  ___MSECTION_SIZE>>1);
 
 #undef ___VMSTATE_MEM
@@ -2899,7 +2852,7 @@ ___PSDKR)
       else if (scan_ptr >= scan_msection->alloc)
         {
           scan_msection = scan_msection->next;
-          scan_ptr = start_of_tospace (___VMSTATE_FROM_PSTATE(___ps), scan_msection);
+          scan_ptr = ___vm_mem.getStartOfTospace(scan_msection);
           continue;
         }
       body = scan_ptr + 1;
@@ -3090,8 +3043,8 @@ ___virtual_machine_state ___vms;)
   stack_msection = 0;
   heap_msection = 0;
 
-  next_stack_msection (___ps); /* allocate one msection for stack */
-  next_heap_msection (___ps);  /* allocate one msection for local heap */
+  ___ps_mem.nextStackSection(); /* allocate one msection for stack */
+  ___ps_mem.nextHeapSection();  /* allocate one msection for local heap */
 
   /*
    * Create "break frame" of initial top section.
@@ -3143,10 +3096,7 @@ ___virtual_machine_state ___vms;)
 }
 
 
-___SCMOBJ ___setup_mem_vmstate
-   ___P((___virtual_machine_state ___vms),
-        (___vms)
-___virtual_machine_state ___vms;)
+___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 {
 #undef ___VMSTATE_MEM
 #define ___VMSTATE_MEM(var) ___vms->mem.var
@@ -3247,6 +3197,7 @@ ___virtual_machine_state ___vms;)
   words_prev_msections = 0;
 
   tospace_at_top = 0;
+  ___vms->mem.tospaceOffset = 0;
   nb_msections_used = 0;
 
   executable_wills = ___TAG(0,___EXECUTABLE_WILL); /* tagged empty list */
@@ -4268,7 +4219,7 @@ ___SIZE_TS nonmovable_words_needed;)
   heap_msection = 0;
   nb_msections_used = 0;
 
-  next_heap_msection (___ps);
+  ___ps_mem.nextHeapSection();
 
   scan_msection = heap_msection;
   scan_ptr = alloc_heap_ptr;
@@ -4413,7 +4364,7 @@ ___SIZE_TS nonmovable_words_needed;)
          */
 
         p1 = start + length;
-        p2 = start_of_fromspace (___VMSTATE_FROM_PSTATE(___ps), the_msections->head) + length;
+        p2 = ___vm_mem.getStartOfFromspace(the_msections->head) + length;
 
         while (p1 != start)
           *--p2 = *--p1;
@@ -4423,7 +4374,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
     adjust_msections (&the_msections, target_nb_sections);
 
-    next_stack_msection (___ps);
+    ___ps_mem.nextStackSection();
 
     p1 = start + length;
     p2 = alloc_stack_ptr;
@@ -4443,7 +4394,7 @@ ___SIZE_TS nonmovable_words_needed;)
 #endif
 
   if (alloc_heap_ptr > alloc_heap_limit - ___MSECTION_FUDGE)
-    next_heap_msection (___ps);
+    ___ps_mem.nextHeapSection();
 
   avail = WORDS_AVAILABLE + overflow_reserve - WORDS_OCCUPIED;
 
@@ -4452,7 +4403,7 @@ ___SIZE_TS nonmovable_words_needed;)
       overflow = 1;
       overflow_reserve >>= 5; /* make 96.875% of reserve usable */
       if (overflow_reserve == 0)
-        fatal_heap_overflow ();
+        ___ps_mem.reportFatalOverflow("Insufficient overflow reserve");
     }
   else if (avail >= normal_overflow_reserve)
     overflow_reserve = normal_overflow_reserve; /* restore overflow reserve */
@@ -4553,7 +4504,7 @@ ___PSDKR)
           else
             frame = ___FP_STK(alloc_stack_ptr,-___BREAK_FRAME_NEXT);
 
-          next_stack_msection (___ps);
+          ___ps_mem.nextStackSection();
 
           /*
            * Create a "break frame" in the new stack msection.
@@ -4624,7 +4575,7 @@ ___PSDKR)
      )
     {
       if (alloc_heap_ptr > alloc_heap_limit - ___MSECTION_FUDGE)
-        next_heap_msection (___ps);
+        ___ps_mem.nextHeapSection();
 
       prepare_mem_pstate (___ps);
 
