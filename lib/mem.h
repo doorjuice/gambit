@@ -249,6 +249,13 @@ extern ___F64 ___bytes_allocated
 
 /*---------------------------------------------------------------------------*/
 
+#define ___ps_mem ___ps->mem
+#define next_heap_msection(ps)  ___ps_mem.nextHeapSection()
+#define next_stack_msection(ps) ___ps_mem.nextStackSection()
+
+#define ___vm_mem ___VMSTATE_FROM_PSTATE(___ps)->mem
+
+// The following are "legacy" definitions (but still valid)
 #define ___PSTATE_MEM(var) ___ps->mem.var
 #define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
 

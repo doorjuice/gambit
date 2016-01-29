@@ -1658,58 +1658,6 @@ ___HIDDEN void fatal_heap_overflow ___PVOID
 }
 
 
-___HIDDEN ___msection *next_msection(___processor_state ___ps, ___msection *ms)
-{
-  ___msection *result;
-
-  if (nb_msections_used == 0)
-    result = the_msections->head;
-  else
-    result = alloc_msection->next;
-
-  if (result == 0)
-    {
-      if (stack_msection == heap_msection)
-        fatal_heap_overflow ();
-      result = ms;
-    }
-  else
-    {
-      alloc_msection = result;
-      nb_msections_used++;
-    }
-
-  return result;
-}
-
-
-___HIDDEN void next_stack_msection(___processor_state ___ps)
-{
-  if (stack_msection != 0)
-    words_prev_msections += alloc_stack_start - alloc_stack_ptr;
-
-  stack_msection = next_msection (___ps, heap_msection);
-  alloc_stack_limit = start_of_tospace (___VMSTATE_FROM_PSTATE(___ps), stack_msection);
-  alloc_stack_start = alloc_stack_limit + (___MSECTION_SIZE>>1);
-  alloc_stack_ptr = alloc_stack_start;
-}
-
-
-void next_heap_msection(___processor_state ___ps)
-{
-  if (heap_msection != 0)
-    {
-      words_prev_msections += alloc_heap_ptr - alloc_heap_start;
-      heap_msection->alloc = alloc_heap_ptr;
-    }
-
-  heap_msection = next_msection (___ps, stack_msection);
-  alloc_heap_start = start_of_tospace (___VMSTATE_FROM_PSTATE(___ps), heap_msection);
-  alloc_heap_limit = alloc_heap_start + (___MSECTION_SIZE>>1);
-  alloc_heap_ptr = alloc_heap_start;
-}
-
-
 /*---------------------------------------------------------------------------*/
 
 #ifdef ___DEBUG
@@ -2419,7 +2367,7 @@ ___virtual_machine_state ___vms;)
 
           if (mao.isMovable()) {
             MovableObject *mo = mao.asMovable();
-            *start = ___TAG(mo->move(___PSP alloc_heap_ptr), ___TYP(obj));
+            *start = ___TAG(mo->move(___PSPNC), ___TYP(obj));
           }
           else if (mao.isStill()) {
             StillObject *so = mao.asStill();
@@ -2448,26 +2396,18 @@ ___HIDDEN void mark_captured_continuation(___PSD ___WORD *orig_ptr)
 {
   ___PSGET
   ___WORD *ptr = orig_ptr;
-  int fs, link, i;
-  ___WORD *fp;
-  ___WORD ra1;
-  ___WORD ra2;
-  ___WORD cf;
+  ___WORD cf = *ptr;
 
-  cf = *ptr;
-
-#if 0
-  printf("-------------\n");;;;;;;;;;;;;;;;;;;;;;;;;;
-  fflush(stdout);
-#endif
-
-  if (___TYP(cf) == ___tFIXNUM && cf != ___END_OF_CONT_MARKER)
+  if (___TYP(cf) != ___tFIXNUM || cf == ___END_OF_CONT_MARKER)
+    mark_array(___PSP orig_ptr, 1);
+  else
     {
+      int fs, link, i;
+      ___WORD *fp;
+      ___WORD ra1;
+      ___WORD ra2;
+
       /* continuation frame is in the stack */
-
-      ___WORD *alloc = alloc_heap_ptr;
-      ___WORD *limit = alloc_heap_limit;
-
       next_frame:
 
       fp = ___CAST(___WORD*,cf);
@@ -2486,28 +2426,6 @@ ___HIDDEN void mark_captured_continuation(___PSD ___WORD *orig_ptr)
           ___COVER_MARK_CAPTURED_CONTINUATION_RETN;
         }
 
-#if 0
-      printf("fp=0x%08lx ra1=0x%08lx fs=%d link=%d\n", fp, ra1, fs, link);;;;;;;;;;;;;;;;;;;;;;;;;;
-      fflush(stdout);
-#endif
-
-      /* with reserve=1
-bash-3.2$ gsi/gsi
--------------
-Gambit v4.5.2
-
-> -------------
-fp=0x1006fff68 ra1=0x1001f9bc1 fs=3 link=0
-fp=0x1006fff88 ra1=0x1002efc21 fs=7 link=0
-fp=0x1006fffc8 ra1=0x1002efda1 fs=3 link=0
-fp=0x1006fffe8 ra1=0x1001f4e01 fs=3 link=0
--------------
--------------
-fp=0x1006fff68 ra1=0x1001f9bc1 fs=3 link=0
--------------
-fp=0x1006fff68 ra1=0x1001f9bc1 fs=3 link=0
-      */
-
       ___FP_ADJFP(fp,-___FRAME_SPACE(fs)); /* get base of frame */
 
       ra2 = ___FP_STK(fp,link+1);
@@ -2520,19 +2438,10 @@ fp=0x1006fff68 ra1=0x1001f9bc1 fs=3 link=0
       else
         {
           ___WORD forw;
-          ___SIZE_TS words;
+          ___SIZE_TS words = fs + ___FRAME_EXTRA_SLOTS;
+          ___WORD *alloc = ___ps_mem.requireHeapSpace(words + ___SUBTYPED_OVERHEAD);
 
           ___COVER_MARK_CAPTURED_CONTINUATION_COPY;
-
-          words = fs + ___FRAME_EXTRA_SLOTS;
-
-          while (alloc + words + ___SUBTYPED_OVERHEAD > limit)
-            {
-              alloc_heap_ptr = alloc;
-              next_heap_msection (___ps);
-              alloc = alloc_heap_ptr;
-              limit = alloc_heap_limit;
-            }
 
           *alloc++ = ___MAKE_HD_WORDS(words, ___sFRAME);
 #if ___SUBTYPED_OVERHEAD != 1
@@ -2572,16 +2481,13 @@ fp=0x1006fff68 ra1=0x1001f9bc1 fs=3 link=0
 
           ptr = &___FP_STK(alloc,link+1);
 
+          ___ps_mem.updateHeapPtr(alloc);
           if (___TYP(cf) == ___tFIXNUM && cf != ___END_OF_CONT_MARKER)
             goto next_frame;
         }
 
       *orig_ptr = ___TAG(___UNTAG_AS(*orig_ptr, ___tFIXNUM), ___tSUBTYPED);
-
-      alloc_heap_ptr = alloc;
     }
-  else
-    mark_array (___PSP orig_ptr, 1);
 }
 
 
@@ -4357,7 +4263,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
   words_prev_msections = 0;
 
-  tospace_at_top = !tospace_at_top;
+  ___vm_mem.toggleTospace();
   stack_msection = 0;
   heap_msection = 0;
   nb_msections_used = 0;

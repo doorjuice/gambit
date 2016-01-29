@@ -41,7 +41,7 @@
 
 /*---------------------------------------------------------------------------*/
 
-extern void next_heap_msection(___processor_state ___ps);
+//extern void next_heap_msection(___processor_state ___ps);
 
 class MovableObject;
 class StillObject;
@@ -98,10 +98,9 @@ class MovableObject : public MemoryAllocatedObject {
     MovableObject(___WORD* obj);
     
     ___SIZE_TS getSize() const;
-    ___WORD* move(___PSD ___WORD* alloc);
+    ___WORD* move(___PSDNC);
     
     private:
-    ___WORD* requireMemory(___PSD ___WORD* alloc);
     ___WORD* forwardTo(___WORD* dest);
     void gatherStats();
 };
@@ -118,3 +117,4 @@ class StillObject : public MemoryAllocatedObject {
 };
 
 #endif
+

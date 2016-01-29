@@ -8,11 +8,23 @@
 
 class MemoryBroker : public ___vmstate_mem {
     
-    public:
-    static const unsigned int MSECTION_SIZE;
+    private:
+    ___WORD tospaceOffset;
     
-    ___msection* next_msection();
-    ___WORD *start_of_tospace(___msection *s);
+    public:
+    static const ___WORD MSECTION_SIZE, MSECTION_HALF;
+    
+    inline ___WORD getTospaceOffset() const {
+        return tospaceOffset;
+    }
+    
+    inline void toggleTospace() {
+        tospace_at_top_ = !tospace_at_top_;
+        tospaceOffset = tospace_at_top_ ? MSECTION_HALF : 0;
+    }
+    
+    ___msection* nextMemorySection();
+    ___WORD* start_of_tospace(___msection *ms) const;
 };
 
 #endif

@@ -48,14 +48,13 @@ ___SIZE_TS MovableObject::getSize() const {
 #endif
 }
 
-___WORD* MovableObject::move(___PSD ___WORD* alloc) {
+___WORD* MovableObject::move(___PSDNC) {
     ___PSGET
+    ___WORD* alloc = ___ps_mem.requireHeapSpace(getSize());
     
 #ifdef GATHER_STATS
     gatherStats();
 #endif
-    
-    alloc = requireMemory(___PSP alloc);
     
 #if ___WS == 4
     /*
@@ -79,22 +78,8 @@ ___WORD* MovableObject::move(___PSD ___WORD* alloc) {
         *alloc++ = paddingData;
 #endif
 
-    alloc_heap_ptr = alloc;
+    ___ps_mem.updateHeapPtr(alloc);
     return body - ___BODY_OFS;
-}
-
-___WORD* MovableObject::requireMemory(___PSD ___WORD* alloc) {
-    ___PSGET
-    ___WORD* limit = alloc_heap_limit;
-    const ___SIZE_TS size = getSize();
-    
-    while (alloc + size > limit) {
-        alloc_heap_ptr = alloc;
-        next_heap_msection(___ps);
-        alloc = alloc_heap_ptr;
-        limit = alloc_heap_limit;
-    }
-    return alloc;
 }
 
 ___WORD* MovableObject::forwardTo(___WORD* dest) {
