@@ -113,7 +113,7 @@ class StillObject : public MemoryAllocatedObject {
         return body[___STILL_MARK_OFS - ___STILL_BODY_OFS] != -1;
     }
     
-    ___WORD mark(___WORD scanList);
+    void mark(___PSDNC);
 };
 
 #endif

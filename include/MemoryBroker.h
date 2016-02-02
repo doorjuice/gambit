@@ -1,6 +1,7 @@
 #ifndef MemoryBroker_H
 #define MemoryBroker_H
 
+#include "thread.h"
 #include "mem_struct.h"
 
 
@@ -9,6 +10,7 @@
 class MemoryBroker : public ___vmstate_mem {
     
     public: //TODO replace me with a proper constructor and private scope
+    ___MUTEX still_objs_lock_;
     ___WORD tospaceOffset;
     
     public:
@@ -24,6 +26,7 @@ class MemoryBroker : public ___vmstate_mem {
     }
     
     ___msection* nextMemorySection();
+    void markStillObjectForScan(___WORD* stillObject);
     
     //DEPRECATED
     ___WORD* getStartOfTospace(___msection* ms) const;

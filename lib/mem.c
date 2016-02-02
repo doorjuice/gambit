@@ -2325,11 +2325,11 @@ ___virtual_machine_state ___vms;)
           else if (mao.isStill()) {
             StillObject *so = mao.asStill();
             if (!so->isMarked())
-              still_objs_to_scan = so->mark(still_objs_to_scan);
+              so->mark(___PSPNC);
           }
           else if (mao.isForwarded()) {
-            ___WORD *copy_body = ___UNTAG_AS(mao.getHead(), ___FORW);
-            *start = ___TAG(copy_body, ___TYP(obj));
+            ___WORD* newAddr = ___UNTAG_AS(mao.getHead(), ___FORW);
+            *start = ___TAG(newAddr, ___TYP(obj));
           }
 #ifdef ENABLE_CONSISTENCY_CHECKS
           else if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1

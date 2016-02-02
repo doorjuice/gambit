@@ -71,7 +71,7 @@ ___WORD* MovableObject::move(___PSDNC) {
     }
 #endif
 
-    alloc = forwardTo(alloc) + getLength();
+    alloc = forwardTo(alloc);
 
 #if ___WS == 4
     if (padding)
@@ -83,10 +83,17 @@ ___WORD* MovableObject::move(___PSDNC) {
 }
 
 ___WORD* MovableObject::forwardTo(___WORD* dest) {
-    *dest++ = getHead();
-    body[-1] = ___TAG((dest - ___BODY_OFS), ___FORW);
-    body = ___memcpy(dest, body, getLength());
-    return dest;
+    if (___COMPARE_AND_SWAP_WORD(body-1, getHead(), 
+                                 ___TAG((dest+1 - ___BODY_OFS), ___FORW)) 
+        == getHead()) {
+        *dest++ = getHead();
+        body = ___memcpy(dest, body, getLength());
+        return body + getLength();
+    }
+    else {
+        body = ___UNTAG_AS(body[-1], ___FORW) + ___BODY_OFS;
+        return dest;
+    }
 }
 
 void MovableObject::gatherStats() {
@@ -106,9 +113,8 @@ StillObject::StillObject(___WORD* obj)
     assert(isStill());
 }
 
-___WORD StillObject::mark(___WORD scanList) {
+void StillObject::mark(___PSDNC) {
     assert(!isMarked());
-    body[___STILL_MARK_OFS - ___STILL_BODY_OFS] = scanList;
-    scanList = ___CAST(___WORD,body - ___STILL_BODY_OFS);
-    return scanList;
+    ___PSGET
+    ___vm_mem.markStillObjectForScan(body - ___STILL_BODY_OFS);
 }
