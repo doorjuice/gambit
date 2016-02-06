@@ -8,11 +8,11 @@
 #define ___GAMBIT_H
 
 #ifndef ___VERSION
-#define ___VERSION 408003
+#define ___VERSION 408004
 #endif
 
-#if ___VERSION != 408003
-#include "gambit-not408003.h"
+#if ___VERSION != 408004
+#include "gambit-not408004.h"
 #else
 
 #ifdef HAVE_CONFIG_H
@@ -280,6 +280,17 @@
 #ifndef ___NO_THREAD_LOCAL_STORAGE_CLASS
 #ifndef ___THREAD_LOCAL_STORAGE_CLASS
 #define @CONF_THREAD_LOCAL_STORAGE_CLASS@
+#endif
+#endif
+
+
+/*
+ * Determine if an activity log should be kept or not.
+ */
+
+#ifndef ___NO_ACTIVITY_LOG
+#ifndef ___ACTIVITY_LOG
+#define @CONF_ACTIVITY_LOG@
 #endif
 #endif
 
@@ -2542,7 +2553,7 @@ ___D_ALL
 #define ___END_COD \
 ___ps->pc=___pc; ___W_ALL return ___pc; }
 
-#ifdef ___DEBUG
+#ifdef ___DEBUG_CTRL_FLOW_HISTORY
 
 #define ___CTRL_FLOW_HISTORY_LENGTH 1024
 
@@ -2565,10 +2576,14 @@ do { ___processor_state ___ps = ___PSTATE; ___AM_HERE_PS } while (0)
 #endif
 
 #ifdef ___DEBUG_HOST_CHANGES
-#define ___REGISTER_HOST_ENTRY \
+
+#define ___REGISTER_HOST_ENTRY                                          \
 ___EXT(___register_host_entry) (___PSP ___start, ___MODULE_NAME, __FILE__, __LINE__);
+
 #else
+
 #define ___REGISTER_HOST_ENTRY
+
 #endif
 
 #define ___USES_INDIRECT_GOTO 1
@@ -3990,38 +4005,46 @@ if (___INTERRUPT_REQ(___INTERRUPT_FLAGS(), (___ps->intr_mask = mask))) \
 #endif
 
 #ifdef ___DEBUG_STACK_LIMIT
-#define ___POLL(n) \
+
+#define ___POLL(n)                    \
 if (___EXPECT_FALSE(___POLL_TRIGGER)) \
 {___ps->temp1=___LBL(n); \
 ___ps->poll_location.file=__FILE__; \
 ___ps->poll_location.line=__LINE__; \
 ___JUMPEXTPRM(___NOTHING,___GSTATE->handler_stack_limit) \
 }
+
 #else
-#define ___POLL(n) \
+
+#define ___POLL(n)                    \
 if (___EXPECT_FALSE(___POLL_TRIGGER)) \
 {___ps->temp1=___LBL(n); \
 ___JUMPEXTPRM(___NOTHING,___GSTATE->handler_stack_limit) \
 }
+
 #endif
 
 #define ___TASK_PUSH(i)
 #define ___TASK_POP(n)
 
 #ifdef ___DEBUG_HEAP_LIMIT
-#define ___CHECK_HEAP(n,m) \
+
+#define ___CHECK_HEAP(n,m)                    \
 if (___EXPECT_FALSE(___hp>___ps->heap_limit)) \
 {___ps->temp1=___LBL(n); \
 ___ps->check_heap_location.file=__FILE__; \
 ___ps->check_heap_location.line=__LINE__; \
 ___JUMPEXTPRM(___NOTHING,___GSTATE->handler_heap_limit) \
 }
+
 #else
-#define ___CHECK_HEAP(n,m) \
+
+#define ___CHECK_HEAP(n,m)                    \
 if (___EXPECT_FALSE(___hp>___ps->heap_limit)) \
 {___ps->temp1=___LBL(n); \
 ___JUMPEXTPRM(___NOTHING,___GSTATE->handler_heap_limit) \
 }
+
 #endif
 
 #define ___FORCE1(n,src) \
@@ -4965,11 +4988,11 @@ ___P((___global_state ___gs),()); ___END_C_LINKAGE
 
 #define ___HRESULT_ERR(hresult) \
 (((hresult)&___MASK(___ERR_CODE,25)) | \
-(((hresult)&___MASK(unsigned ___ERR_CODE,27))>>2))
+(((hresult)&~___MASK(___ERR_CODE,27))>>2))
 
 #define ___HRESULT_FROM_ERR_CODE(err) \
 (((err)&___MASK(___ERR_CODE,25)) | \
-(((err)&___MASK(unsigned ___ERR_CODE,25))<<2))
+(((err)&~___MASK(unsigned ___ERR_CODE,25))<<2))
 
 #define ___WIN32_ERR(win32err) \
 ___HRESULT_ERR(HRESULT_FROM_WIN32(win32err))
@@ -5996,15 +6019,11 @@ int _fltused; /* needed if floating-point used. */
 
 #endif
 
-#ifdef ___DEBUG
-
 typedef struct ___source_location
   {
     int line;
     char *file;
   } ___source_location;
-
-#endif
 
 #ifdef ___USE_SETJMP
 
@@ -6202,12 +6221,16 @@ typedef struct ___processor_state_struct
     ___WORD intr_mask; /* 1 bit means interrupt disabled */
     ___WORD volatile intr_flag[___NB_INTRS];
 
+#ifdef ___ACTIVITY_LOG
+    ___pstate_actlog actlog; /* activity log state */
+#endif
+
     MemoryManager mem; /* memory management state */
 
-#ifdef ___DEBUG
-
+#ifdef ___DEBUG_CTRL_FLOW_HISTORY
     unsigned int ctrl_flow_history_index;
     ___source_location ctrl_flow_history[___CTRL_FLOW_HISTORY_LENGTH];
+#endif
 
 #ifdef ___DEBUG_STACK_LIMIT
     ___source_location poll_location;
@@ -6217,8 +6240,6 @@ typedef struct ___processor_state_struct
 #ifdef ___DEBUG_HEAP_LIMIT
     ___source_location check_heap_location;
     ___source_location heap_limit_location;
-#endif
-
 #endif
 
 #ifdef ___HEARTBEAT_USING_POLL_COUNTDOWN
@@ -6350,6 +6371,10 @@ typedef struct ___virtual_machine_state_struct
 
     int volatile nb_processors; /* number of processors in this VM */
 
+#ifdef ___ACTIVITY_LOG
+    ___vmstate_actlog actlog; /* activity log state */
+#endif
+
     MemoryBroker mem; /* shared memory management state */
 
     ___SCMOBJ main_module_id; /* symbol identifying the VM's main module */
@@ -6467,6 +6492,10 @@ typedef struct ___setup_params_struct
 typedef struct ___global_state_struct
   {
     ___virtual_machine_state_struct vmstate0; /* first VM */
+
+#ifndef ___SINGLE_VM
+    ___MUTEX vm_list_mut; /* mutex for accessing VM list */
+#endif
 
     int setup_state; /* 0=pre-setup, 1=post-setup, 2=post-cleanup */
 
@@ -7675,7 +7704,6 @@ typedef struct ___global_state_struct
        ___P((___PSD
              ___SCMOBJ err),
             ());
-#ifdef ___DEBUG
 #ifdef ___DEBUG_HOST_CHANGES
     void (*___register_host_entry)
        ___P((___PSD
@@ -7685,6 +7713,22 @@ typedef struct ___global_state_struct
              int line),
             ());
 #endif
+#ifdef ___ACTIVITY_LOG
+    void (*___actlog_add_pstate)
+       ___P((___processor_state ___ps,
+             ___U16 *type,
+             char *name,
+             ___U32 color),
+            ());
+    void (*___actlog_begin_pstate)
+       ___P((___processor_state ___ps,
+             ___U16 *type,
+             char *name,
+             ___U32 color),
+            ());
+    void (*___actlog_end_pstate)
+       ___P((___processor_state ___ps),
+            ());
 #endif
     void (*___raise_interrupt_pstate)
        ___P((___processor_state ___ps,
@@ -8954,7 +8998,6 @@ ___IMP_FUNC(void,___propagate_error)
    ___P((___PSD
          ___SCMOBJ err),
         ());
-#ifdef ___DEBUG
 #ifdef ___DEBUG_HOST_CHANGES
 ___IMP_FUNC(void,___register_host_entry)
    ___P((___PSD
@@ -8964,6 +9007,22 @@ ___IMP_FUNC(void,___register_host_entry)
          int line),
         ());
 #endif
+#ifdef ___ACTIVITY_LOG
+___IMP_FUNC(void,___actlog_add_pstate)
+   ___P((___processor_state ___ps,
+         ___U16 *type,
+         char *name,
+         ___U32 color),
+        ());
+___IMP_FUNC(void,___actlog_begin_pstate)
+   ___P((___processor_state ___ps,
+         ___U16 *type,
+         char *name,
+         ___U32 color),
+        ());
+___IMP_FUNC(void,___actlog_end_pstate)
+   ___P((___processor_state ___ps),
+        ());
 #endif
 ___IMP_FUNC(void,___raise_interrupt_pstate)
    ___P((___processor_state ___ps,

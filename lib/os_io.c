@@ -8,7 +8,7 @@
  */
 
 #define ___INCLUDED_FROM_OS_IO
-#define ___VERSION 408003
+#define ___VERSION 408004
 #include "gambit.h"
 
 #include "os_base.h"
@@ -974,9 +974,9 @@ ___time timeout;)
 
   ___absolute_time_to_relative_time (state.timeout, &delta);
 
-  if (___time_less (state.relative_timeout, delta))
+  if (state.relative_timeout < ___time_to_seconds (delta))
     {
-      delta = state.relative_timeout;
+      ___time_from_seconds (&delta, state.relative_timeout);
       state.timeout = ___time_mod.time_neg_infinity;
     }
   else
@@ -8407,7 +8407,8 @@ int options;)
 
           execvp_errno = errno;
 
-          write (hdp_errno.writing_fd, &execvp_errno, sizeof (execvp_errno));
+          if (write (hdp_errno.writing_fd, &execvp_errno, sizeof (execvp_errno)) < 0)
+            execvp_errno = 0; /* dummy op to avoid compiler warning */
 
           close_half_duplex_pipe (&fdp.input, 0);
           close_half_duplex_pipe (&fdp.output, 1);

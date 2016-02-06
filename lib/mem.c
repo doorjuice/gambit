@@ -3,7 +3,7 @@
 /* Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved.  */
 
 #define ___INCLUDED_FROM_MEM
-#define ___VERSION 408003
+#define ___VERSION 408004
 #include "gambit.h"
 
 #include "os_base.h"
@@ -11,6 +11,7 @@
 #include "setup.h"
 #include "mem.h"
 #include "c_intf.h"
+#include "actlog.h"
 
 #include "MemoryManager.h"
 #include "MemoryAllocatedObject.h"
@@ -25,6 +26,41 @@
 #ifdef ___DEBUG_ALLOC_MEM_TRACE
 #define ___alloc_mem(bytes) ___alloc_mem_debug(bytes,__LINE__,__FILE__)
 #endif
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
+#ifdef ___DEBUG_GARBAGE_COLLECT
+
+/*
+ * Defining the symbol ENABLE_CONSISTENCY_CHECKS will enable the GC to
+ * perform checks that detect when the heap is in an inconsistent
+ * state.  This is useful to detect bugs in the GC and the rest of the
+ * system.  To perform the consistency checks, the verbosity level in
+ * ___GSTATE->setup_params.debug_settings must be at least 1.  The checks are
+ * very extensive and consequently are expensive.  They should only be
+ * used for debugging.
+ */
+
+#define ENABLE_CONSISTENCY_CHECKS
+
+
+/*
+ * Defining the symbol GATHER_STATS will cause the GC to gather
+ * statistics on the objects it encounters in the heap.
+ */
+
+#define GATHER_STATS
+
+
+/*
+ * Defining the symbol SHOW_FRAMES will cause the GC to print out a
+ * trace of the continuation frames that are processed.
+ */
+
+#undef SHOW_FRAMES
+
 #endif
 
 
@@ -3064,7 +3100,7 @@ ___virtual_machine_state ___vms;)
 
   nonexecutable_wills = ___TAG(0,0); /* tagged empty list */
 
-#ifdef ___DEBUG
+#ifdef ___DEBUG_CTRL_FLOW_HISTORY
 
   {
     int i;
@@ -3072,6 +3108,8 @@ ___virtual_machine_state ___vms;)
     for (i=___CTRL_FLOW_HISTORY_LENGTH-1; i>=0; i--)
       ___ps->ctrl_flow_history[i].line = 0;
   }
+
+#endif
 
 #ifdef ___DEBUG_STACK_LIMIT
   ___ps->poll_location.line = 0;
@@ -3081,8 +3119,6 @@ ___virtual_machine_state ___vms;)
 #ifdef ___DEBUG_HEAP_LIMIT
   ___ps->check_heap_location.line = 0;
   ___ps->heap_limit_location.line = 0;
-#endif
-
 #endif
 
 #ifdef ___HEARTBEAT_USING_POLL_COUNTDOWN
@@ -3106,11 +3142,22 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 #ifndef ___SINGLE_VM
 
   /*
-   * Initialize circular queue of VMs.
+   * Add to tail of virtual machine circular list.
    */
 
-  ___vms->prev = ___vms;
-  ___vms->next = ___vms;
+  ___MUTEX_LOCK(___GSTATE->vm_list_mut);
+
+  {
+    ___virtual_machine_state head = &___GSTATE->vmstate0;
+    ___virtual_machine_state tail = head->prev;
+
+    ___vms->prev = tail;
+    ___vms->next = head;
+    head->prev = ___vms;
+    tail->next = ___vms;
+  }
+
+  ___MUTEX_UNLOCK(___GSTATE->vm_list_mut);
 
   /* TODO: implement expansion of glos array when number of globals grows beyond 20000 */
 
@@ -3297,6 +3344,24 @@ ___virtual_machine_state ___vms;)
   free_still_objs (___PSANC(&___vms->pstate[0]));/*TODO: other processors?*/
   cleanup_rc (___vms);
 
+#ifndef ___SINGLE_VM
+
+  /*
+   * Remove from virtual machine circular list.
+   */
+
+  /* It is assumed that ___GSTATE->vm_list_mut is currently locked */
+
+  {
+    ___virtual_machine_state prev = ___vms->prev;
+    ___virtual_machine_state next = ___vms->next;
+
+    next->prev = prev;
+    prev->next = next;
+  }
+
+#endif
+
 #undef ___VMSTATE_MEM
 #define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
 }
@@ -3304,7 +3369,6 @@ ___virtual_machine_state ___vms;)
 
 void ___cleanup_mem ___PVOID
 {
-  ___cleanup_mem_vmstate (&___GSTATE->vmstate0);
   free_psections ();
 }
 
@@ -4177,6 +4241,8 @@ ___SIZE_TS nonmovable_words_needed;)
   ___F64 user_time_end, sys_time_end, real_time_end;
   ___F64 user_time, sys_time, real_time;
 
+  ___ACTLOG_BEGIN_PS(gc,red);
+
   ___process_times (&user_time_start, &sys_time_start, &real_time_start);
 
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
@@ -4441,6 +4507,8 @@ ___SIZE_TS nonmovable_words_needed;)
   last_gc_nonmovable = ___CAST(___F64,words_nonmovable) * ___WS;
 
   ___raise_interrupt_pstate (___ps, ___INTR_GC); /* raise gc interrupt */
+
+  ___ACTLOG_END_PS();
 
   return overflow;
 }

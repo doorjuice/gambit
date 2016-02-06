@@ -4,7 +4,7 @@
 
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(Gambit,v4.8.3,gambit@iro.umontreal.ca,gambit-v4_8_3)
+AC_INIT(Gambit,v4.8.4,gambit@iro.umontreal.ca,gambit-v4_8_4)
 
 AC_CONFIG_HEADERS(include/config.h)
 
@@ -254,12 +254,74 @@ AC_ARG_ENABLE(debug,
               ENABLE_DEBUG=$enableval,
               ENABLE_DEBUG=no)
 
+# Check if debugging of the control flow history is needed.
+
+AC_ARG_ENABLE(debug-ctrl-flow-history,
+              AC_HELP_STRING([--enable-debug-ctrl-flow-history],
+                             [build system so that it tracks the control flow history (default is NO)]),
+              ENABLE_DEBUG_CTRL_FLOW_HISTORY=$enableval,
+              ENABLE_DEBUG_CTRL_FLOW_HISTORY=no)
+
+if test "$ENABLE_DEBUG_CTRL_FLOW_HISTORY" = yes; then
+  AC_DEFINE([___DEBUG_CTRL_FLOW_HISTORY],[],[Enable debugging of control flow history])
+  DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG_CTRL_FLOW_HISTORY"
+  ENABLE_DEBUG=yes
+fi
+
+# Check if debugging of the host changes is needed.
+
+AC_ARG_ENABLE(debug-host-changes,
+              AC_HELP_STRING([--enable-debug-host-changes],
+                             [build system so that it tracks the host changes (default is NO)]),
+              ENABLE_DEBUG_HOST_CHANGES=$enableval,
+              ENABLE_DEBUG_HOST_CHANGES=no)
+
+if test "$ENABLE_DEBUG_HOST_CHANGES" = yes; then
+  AC_DEFINE([___DEBUG_HOST_CHANGES],[],[Enable debugging of host changes])
+  DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG_HOST_CHANGES"
+  ENABLE_DEBUG=yes
+fi
+
+# Check if debugging the garbage collector is needed.
+
+AC_ARG_ENABLE(debug-garbage-collect,
+              AC_HELP_STRING([--enable-debug-garbage-collect],
+                             [build system so that it detects issues in the garbage collect (default is NO)]),
+              ENABLE_DEBUG_GARBAGE_COLLECT=$enableval,
+              ENABLE_DEBUG_GARBAGE_COLLECT=no)
+
+if test "$ENABLE_DEBUG_GARBAGE_COLLECT" = yes; then
+  AC_DEFINE([___DEBUG_GARBAGE_COLLECT],[],[Enable debugging of garbage collect])
+  DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG_GARBAGE_COLLECT"
+  ENABLE_DEBUG=yes
+fi
+
+# Turn on debugging.
+
 if test "$ENABLE_DEBUG" = yes; then
   AC_DEFINE([___DEBUG],[],[Enable debugging])
   DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -D___DEBUG"
 else
   DEFS_OBJ_DYN_LIB_EXE="$DEFS_OBJ_DYN_LIB_EXE -DNDEBUG"
 fi
+
+###############################################################################
+#
+# Check if the system should keep an activity log.
+
+AC_ARG_ENABLE(activity-log,
+              AC_HELP_STRING([--enable-activity-log],
+                             [build system so it keeps an activity log (default is NO)]),
+              ENABLE_ACTIVITY_LOG=$enableval,
+              ENABLE_ACTIVITY_LOG=no)
+
+if test "$ENABLE_ACTIVITY_LOG" = yes; then
+  CONF_ACTIVITY_LOG="___ACTIVITY_LOG"
+else
+  CONF_ACTIVITY_LOG="___NO_ACTIVITY_LOG"
+fi
+
+AC_SUBST(CONF_ACTIVITY_LOG)
 
 ###############################################################################
 #
@@ -1034,6 +1096,7 @@ else
   AC_CHECK_HEADERS(dl.h)
   AC_CHECK_HEADERS(sys/dxe.h)
   AC_CHECK_HEADERS(mach-o/dyld.h)
+  AC_CHECK_HEADERS(mach/mach_time.h)
   AC_CHECK_HEADERS(sys/types.h)
   AC_CHECK_HEADERS(sys/time.h)
   AC_CHECK_HEADERS(sys/times.h)
@@ -1187,6 +1250,8 @@ else
 
                AC_SEARCH_LIBS(WSAStartup,ws2_32)
 
+               AC_SEARCH_LIBS(clock_gettime,rt)
+
                AC_SEARCH_LIBS(timeBeginPeriod,winmm)
                ;;
     esac
@@ -1325,6 +1390,7 @@ else
   AC_CHECK_FUNC_SIGNAL
 
   AC_CHECK_FUNCS(clock_gettime)
+  AC_CHECK_FUNCS(mach_absolute_time)
   AC_CHECK_FUNCS(getclock)
   #AC_CHECK_FUNCS(GetSystemTime)
   AC_CHECK_FUNCS(gettimeofday)
@@ -1383,7 +1449,7 @@ else
   AC_CHECK_FUNCS(hstrerror)
 
   case "$target_os" in
-    openbsd*)
+    OpenBSD*)
       # OpenBSD/mips64(el) does have get_fpc_csr(), but lacks union fpc_csr.
       ;;
     *)
@@ -2710,7 +2776,7 @@ AC_SUBST(COMPILATION_OPTIONS)
 
 AC_PROG_MAKE_SET
 
-AC_CONFIG_FILES([makefile include/makefile include/gambit.h include/env.h include/typ.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
+AC_CONFIG_FILES([makefile include/makefile include/gambit.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile contrib/xactlog/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
 AC_OUTPUT
 
 if test "$ENABLE_SINGLE_HOST" != yes -a "$C_COMP_LLVM" != yes; then
