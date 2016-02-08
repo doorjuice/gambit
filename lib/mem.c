@@ -2361,7 +2361,8 @@ ___virtual_machine_state ___vms;)
           else if (mao.isStill()) {
             StillObject *so = mao.asStill();
             if (!so->isMarked())
-              so->mark(___PSPNC);
+                still_objs_to_scan = so->mark(still_objs_to_scan);
+              //so->mark(___PSPNC);
           }
           else if (mao.isForwarded()) {
             ___WORD* newAddr = ___UNTAG_AS(mao.getHead(), ___FORW);

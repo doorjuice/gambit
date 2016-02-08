@@ -1,4 +1,6 @@
-#include "MemoryBroker.h"
+#include "gambit.h"
+
+#include "MemoryAllocatedObject.h" //FIXME temp include
 
 
 const ___WORD MemoryBroker::MSECTION_SIZE = 131072; //TODO sync with defined value
@@ -23,12 +25,12 @@ ___msection* MemoryBroker::nextMemorySection() {
 
 //TODO still_objs_to_scan could also be unique per thread
 void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
-    ___MUTEX_LOCK(still_objs_lock_);
+    //___MUTEX_LOCK(still_objs_lock_);
     if (___COMPARE_AND_SWAP_WORD(stillObject + ___STILL_MARK_OFS, -1, 
                                  ___CAST(___WORD, still_objs_to_scan_)) 
         == -1)
         still_objs_to_scan_ = ___CAST(___WORD, stillObject);
-    ___MUTEX_UNLOCK(still_objs_lock_);
+    //___MUTEX_UNLOCK(still_objs_lock_);
 }
 
 ___WORD* MemoryBroker::getStartOfTospace(___msection* ms) const {

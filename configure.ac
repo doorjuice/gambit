@@ -184,8 +184,8 @@ if test "$ENABLE_GUIDE" = yes; then
 ************************************************************************
 ***                                                                  ***
 *** The Gambit Universal IDE requires that the system be built using ***
-*** the Qt GUI library version 3.3.  Version $qt_version of Qt is currently  ***
-*** installed.                                                       ***
+*** the Qt GUI library version 3.3.  Version $qt_version of Qt is    ***
+*** currently installed.                                             ***
 ***                                                                  ***
 ************************************************************************
 ])
@@ -2538,7 +2538,7 @@ GAMBITLIB_DEFS="$GAMBITLIB_DEFS -D___EXE_EXTENSION=\"\\\"$EXE_EXTENSION\\\"\""
 GAMBITLIB_DEFS="$GAMBITLIB_DEFS -D___BAT_EXTENSION=\"\\\"$BAT_EXTENSION\\\"\""
 
 ###############################################################################
-
+#
 # Escape strings before substitution.
 
 ESC_MF="sed -e s/\\\\\\\$/\\\$\\\$/g"
@@ -2776,7 +2776,17 @@ AC_SUBST(COMPILATION_OPTIONS)
 
 AC_PROG_MAKE_SET
 
-AC_CONFIG_FILES([makefile include/makefile include/gambit.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile contrib/xactlog/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
+###############################################################################
+#
+# Merge all the fragments into gambit.h (before doing further substitutions).
+
+FILE_ENV_H="include/env.h"
+FILE_TYP_H="include/typ.h"
+
+AC_SUBST_FILE(FILE_ENV_H)
+AC_SUBST_FILE(FILE_TYP_H)
+
+AC_CONFIG_FILES([makefile include/makefile include/env.h include/typ.h include/gambit.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile contrib/xactlog/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
 AC_OUTPUT
 
 if test "$ENABLE_SINGLE_HOST" != yes -a "$C_COMP_LLVM" != yes; then

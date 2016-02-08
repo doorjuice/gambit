@@ -19,10 +19,56 @@
 #include "config.h"
 #endif
 
+
 /*---------------------------------------------------------------------------*/
 
-#include "env.h" /* ENVIRONMENT CONFIGURATION */
-#include "typ.h" /* TYPE ABSTRACTIONS */
+/*
+ * This section determines the following characteristics of the target
+ * platform:
+ *
+ *  - target operating system (WIN32, POSIX, etc)
+ *  - target processor type (x86, PowerPC, etc)
+ *  - byte order endianness (big-endian or little-endian)
+ *  - width of the integer and floating-point types (char, short, int, etc)
+ */
+
+@FILE_ENV_H@
+
+
+/*---------------------------------------------------------------------------*/
+
+/*
+ * The following symbols must be defined to reflect the integer and
+ * floating-point data types supported by the C compiler.  A symbol is
+ * only defined if the data type exists.  At least ___F64 and one of
+ * the pairs ___S32/___U32 and ___S64/___U64 must be defined.
+ *
+ *  define ___S8 as the signed integer type of exactly 8 bits
+ *  define ___U8 as the unsigned integer type of exactly 8 bits
+ *  define ___SM8 as the signed integer type of at least 8 bits
+ *  define ___UM8 as the unsigned integer type of at least 8 bits
+ *
+ *  define ___S16 as the signed integer type of exactly 16 bits
+ *  define ___U16 as the unsigned integer type of exactly 16 bits
+ *  define ___SM16 as the signed integer type of at least 16 bits
+ *  define ___UM16 as the unsigned integer type of at least 16 bits
+ *
+ *  define ___S32 as the signed integer type of exactly 32 bits
+ *  define ___U32 as the unsigned integer type of exactly 32 bits
+ *  define ___SM32 as the signed integer type of at least 32 bits
+ *  define ___UM32 as the unsigned integer type of at least 32 bits
+ *
+ *  define ___S64 as the signed integer type of exactly 64 bits
+ *  define ___U64 as the unsigned integer type of exactly 64 bits
+ *  define ___SM64 as the signed integer type of at least 64 bits
+ *  define ___UM64 as the unsigned integer type of at least 64 bits
+ *
+ *  define ___F32 as the 32 bit floating-point type
+ *  define ___F64 as the 64 bit floating-point type
+ */
+
+@FILE_TYP_H@
+
 
 /*---------------------------------------------------------------------------*/
 
@@ -292,6 +338,92 @@
 #ifndef ___ACTIVITY_LOG
 #define @CONF_ACTIVITY_LOG@
 #endif
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
+/* Dependencies on language (i.e. C++, ANSI-C, and K&R C). */
+
+#ifdef __cplusplus
+
+#define ___P(ansi,kr)ansi
+#define ___PVOID ()
+
+#define ___BEGIN_C_LINKAGE extern "C" {
+#define ___END_C_LINKAGE }
+
+/*
+ * Define ___BOOL as "bool" or "int", according to what is supported
+ * by the compiler (this is determined by the configure script) unless
+ * it is defined elsewhere.
+ */
+
+#ifndef ___BOOL
+#define ___BOOL @CONF_BOOL@
+#endif
+
+#define ___USE_CPLUSPLUS_NEW_DELETE
+#define ___USE_CPLUSPLUS_CLEANUP
+
+#else
+
+#ifdef __STDC__
+
+#define ___P(ansi,kr)ansi
+#define ___PVOID (void)
+
+#else
+
+#define ___P(ansi,kr)kr
+#define ___PVOID ()
+
+#endif
+
+#define ___BEGIN_C_LINKAGE
+#define ___END_C_LINKAGE
+
+#ifndef ___BOOL
+#define ___BOOL int
+#endif
+
+#undef ___USE_SETJMP
+#define ___USE_SETJMP
+
+#endif
+
+
+#ifdef ___USE_SETJMP
+
+#ifdef ___DONT_HAVE_SETJMP_H
+
+/*
+ * If the file "setjmp.h" is not available then the symbol
+ * ___DONT_HAVE_SETJMP_H must be defined (for example on the compiler's
+ * command line).  In this case we assume that setjmp is defined as
+ * a macro.
+ */
+
+#undef ___CAN_IMPORT_SETJMP_DYNAMICALLY
+#define ___CAN_IMPORT_SETJMP_DYNAMICALLY
+
+#else
+
+/*
+ * If the file "setjmp.h" is available then we can use the C
+ * preprocessor to check if setjmp is a macro (otherwise it has to be
+ * a function).  If it is a macro then we can't get a pointer to it!
+ */
+
+#include <setjmp.h>
+
+#ifdef setjmp
+#undef ___CAN_IMPORT_SETJMP_DYNAMICALLY
+#define ___CAN_IMPORT_SETJMP_DYNAMICALLY
+#endif
+
+#endif
+
 #endif
 
 
@@ -697,7 +829,124 @@ ___CAST_U64((val)<<(((i)&7)<<3))
 
 /*---------------------------------------------------------------------------*/
 
-#include "def.h" /* GENERAL DEFINITIONS */
+/*
+ * GENERAL DEFINITIONS
+ *
+ * ___WORD           an integer type able to contain a pointer with no loss
+ * ___WORD_WIDTH     is equal to the number of bits in the type ___WORD
+ * ___LOG_WORD_WIDTH is equal to the base 2 logarithm of ___WORD_WIDTH
+ * ___WS             is equal to sizeof (___WORD)
+ * ___LWS            is equal to the base 2 logarithm of ___WS
+ * ___FLONUM_SIZE    is equal to sizeof (___F64) / ___WS
+ */
+
+#ifdef ___USE_32_BIT_ADDR
+#define ___SIZE_T ___U32
+#define ___SSIZE_T ___S32
+#define ___PTRDIFF_T ___S32
+#define ___WORD ___S32
+#define ___WORD_WIDTH 32
+#define ___LOG_WORD_WIDTH 5
+#define ___WS 4
+#define ___LWS 2
+#define ___FLONUM_SIZE 2
+#else
+#define ___SIZE_T ___U64
+#define ___SSIZE_T ___S64
+#define ___PTRDIFF_T ___S64
+#define ___WORD ___S64
+#define ___WORD_WIDTH 64
+#define ___LOG_WORD_WIDTH 6
+#define ___WS 8
+#define ___LWS 3
+#define ___FLONUM_SIZE 1
+#endif
+
+#define ___SIZE_TS ___SSIZE_T /* temporary hack... in principle ___SIZE_TS should be replaced with ___SIZE_T (unsigned integer) */
+
+#define ___SCMOBJ ___WORD
+#define ___SCMOBJ_WIDTH ___WORD_WIDTH
+
+#define ___ISO_8859_1 ___UM8
+#define ___UTF_8 char
+#define ___UTF_16 ___UM16
+#define ___UCS_2 ___UM16
+#define ___UCS_4 ___UM32
+#define ___ISO_8859_1STRING ___ISO_8859_1*
+#define ___UTF_8STRING ___UTF_8*
+#define ___UTF_16STRING ___UTF_16*
+#define ___UCS_2STRING ___UCS_2*
+#define ___UCS_4STRING ___UCS_4*
+#define ___WCHARSTRING ___WCHAR*
+
+#if ___MAX_CHR <= 0xff
+#define ___CS 1
+#else
+#if ___MAX_CHR <= 0xffff
+#define ___CS 2
+#else
+#define ___CS 4
+#endif
+#endif
+
+#if ___CS == 1
+#define ___CS_SELECT(cs1,cs2,cs4)cs1
+#else
+#if ___CS == 2
+#define ___CS_SELECT(cs1,cs2,cs4)cs2
+#else
+#define ___CS_SELECT(cs1,cs2,cs4)cs4
+#endif
+#endif
+
+#define ___LCS ___CS_SELECT(0,1,2)
+
+#define ___C ___CS_SELECT(___U8,___U16,___U32)
+
+#if ___WORD_WIDTH == ___VOIDSTAR_WIDTH
+#define ___FAKEWORD ___WORD*
+#define ___CAST_FAKEWORD_TO_WORD(x)___CAST(___WORD,x)
+#define ___CAST_WORDSTAR_TO_FAKEWORD(x)x
+#define ___FAKEHOST ___host
+#define ___CAST_HOST_TO_FAKEHOST(x)x
+#define ___CAST_FAKEHOST_TO_HOST(x)x
+#define ___FAKEVOIDSTAR void*
+#define ___CAST_VOIDSTAR_TO_FAKEVOIDSTAR(x)___CAST(___FAKEVOIDSTAR,x)
+#define ___CAST_FAKEVOIDSTAR_TO_VOIDSTAR(x)___CAST(void*,x)
+#else
+#define ___FAKEWORD ___WORD
+#define ___CAST_FAKEWORD_TO_WORD(x)x
+#define ___CAST_WORDSTAR_TO_FAKEWORD(x)___CAST(___WORD,x)
+#define ___FAKEHOST ___WORD
+#define ___CAST_HOST_TO_FAKEHOST(x)___CAST(___WORD,x)
+#define ___CAST_FAKEHOST_TO_HOST(x)___CAST(___host,x)
+#define ___FAKEVOIDSTAR ___WORD
+#define ___CAST_VOIDSTAR_TO_FAKEVOIDSTAR(x)___CAST(___WORD,x)
+#define ___CAST_FAKEVOIDSTAR_TO_VOIDSTAR(x)___CAST(void*,x)
+#endif
+
+/* Padding at end of objects so that they can be aligned to an address */
+/* multiple of 4 or 8 by moving them up in memory.                     */
+
+#ifdef ___USE_32_BIT_ADDR
+#define ___PADDING ,0
+#define ___PADDING_SIZE 1
+#define ___PADDING_LBL ,{0,0,0,0}
+#define ___PADDING_64 ,0,0
+#else
+#define ___PADDING
+#define ___PADDING_SIZE 0
+#define ___PADDING_LBL
+#define ___PADDING_64
+#endif
+
+/* Utility macro to select code for SINGLE/MULTIPLE host. */
+
+#ifdef ___SINGLE_HOST
+#define ___SM(s,m)s
+#else
+#define ___SM(s,m)m
+#endif
 
 /*---------------------------------------------------------------------------*/
 
@@ -6169,11 +6418,493 @@ ___EXT(___U64_add_U64_U64_fn) (x,y)
 
 typedef ___FAKEWORD ___symkey_struct[5+___PADDING_SIZE];
 
+/* Global variable structure */
+
+typedef struct ___glo_struct
+  {
+    ___WORD val;
+    ___WORD prm;
+    struct ___glo_struct* next;
+  } ___glo_struct;
 
 /*---------------------------------------------------------------------------*/
 
-#include "thread.h"
-#include "mem_struct.h"
+/*
+ * Thread system inlined operations.
+ */
+
+#ifdef ___USE_POSIX_THREAD_SYSTEM
+
+#ifndef ___DONT_HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+#define ___MUTEX pthread_mutex_t
+
+#define ___MUTEX_INIT(mut) (pthread_mutex_init (&mut, NULL) == 0)
+#define ___MUTEX_DESTROY(mut) (pthread_mutex_destroy (&mut) == 0)
+#define ___MUTEX_LOCK(mut) (pthread_mutex_lock (&mut) == 0)
+#define ___MUTEX_UNLOCK(mut) (pthread_mutex_unlock (&mut) == 0)
+#define ___THREAD_ID (pthread_self())
+
+#endif
+
+
+#ifdef ___USE_WIN32_THREAD_SYSTEM
+
+#define ___MUTEX HANDLE
+
+#define ___MUTEX_INIT(mut) ((mut = CreateMutex (NULL, FALSE, NULL)) != NULL)
+#define ___MUTEX_DESTROY(mut) CloseHandle (mut)
+#define ___MUTEX_LOCK(mut) (WaitForSingleObject (mut, INFINITE) != WAIT_FAILED)
+#define ___MUTEX_UNLOCK(mut) ReleaseMutex (mut)
+#define ___THREAD_ID (GetCurrentThreadId())
+
+#endif
+
+
+#ifndef ___USE_POSIX_THREAD_SYSTEM
+#ifndef ___USE_WIN32_THREAD_SYSTEM
+
+#define ___MUTEX int
+
+#define ___MUTEX_INIT(mut) 1
+#define ___MUTEX_DESTROY(mut)
+#define ___MUTEX_LOCK(mut) 1
+#define ___MUTEX_UNLOCK(mut)
+#define ___THREAD_ID 0
+
+#endif
+#endif
+
+
+#if ___WS == 4
+#ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4
+#define ___USE_sync_builtins
+#endif
+#else
+#if ___WS == 8
+#ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8
+#define ___USE_sync_builtins
+#endif
+#endif
+#endif
+
+
+#ifndef ___USE_sync_builtins
+#ifdef ___USE_WIN32_THREAD_SYSTEM
+#define ___USE_WIN32_sync
+#else
+#ifdef ___USE_POSIX_THREAD_SYSTEM
+#define ___USE_emulated_sync
+#else
+#define ___USE_sequential_sync
+#endif
+#endif
+#endif
+
+
+#ifdef ___USE_sync_builtins
+
+#define ___COMPARE_AND_SWAP_WORD(p,oldval,newval) \
+__sync_val_compare_and_swap(p,oldval,newval)
+
+#define ___FETCH_AND_ADD_WORD(p,val) \
+__sync_fetch_and_add(p,val)
+
+#define ___FETCH_AND_CLEAR_WORD(p) \
+__sync_fetch_and_and(p,0)
+
+#endif
+
+
+#ifdef ___USE_WIN32_sync
+
+#define ___COMPARE_AND_SWAP_WORD(p,oldval,newval) \
+___CAST(___WORD,InterlockedCompareExchangePointer(___CAST(void**,p),___CAST(void*,oldval),___CAST(void*,newval)))
+
+#if ___WS == 4
+#define ___FETCH_AND_ADD_WORD(p,val) \
+(InterlockedAdd(___CAST(LONG volatile *,p),val)-(val))
+#define ___FETCH_AND_CLEAR_WORD(p) \
+InterlockedAnd(___CAST(LONG volatile *,p),0)
+#else
+#define ___FETCH_AND_ADD_WORD(p,val) \
+(InterlockedAdd64(___CAST(LONGLONG volatile *,p),val)-(val))
+#define ___FETCH_AND_CLEAR_WORD(p) \
+InterlockedAnd64(___CAST(LONGLONG volatile *,p),0)
+#endif
+
+#endif
+
+
+#ifdef ___USE_emulated_sync
+
+#define ___COMPARE_AND_SWAP_WORD(p,oldval,newval) \
+___EXT(___emulated_compare_and_swap_word)(p,oldval,newval)
+
+#define ___FETCH_AND_ADD_WORD(p,val) \
+___EXT(___emulated_fetch_and_add_word)(p,val)
+
+#define ___FETCH_AND_CLEAR_WORD(p) \
+___EXT(___emulated_fetch_and_clear_word)(p)
+
+#endif
+
+
+#ifdef ___USE_sequential_sync
+
+#define ___COMPARE_AND_SWAP_WORD(p,oldval,newval) \
+((___ps->temp1 = *(p)) == (oldval) && (*(p) = (newval)), ___ps->temp1)
+
+#define ___FETCH_AND_ADD_WORD(p,val) \
+(___ps->temp1 = *(p), *(p) += (val), ___ps->temp1)
+
+#define ___FETCH_AND_CLEAR_WORD(p) \
+(___ps->temp1 = *(p), *(p) = 0, ___ps->temp1)
+
+#endif
+
+#ifdef ___CPU_x86
+#ifdef __GNUC__
+#define ___CPU_RELAX() __asm__ __volatile__ ("rep nop")
+#endif
+#endif
+
+#ifndef ___CPU_RELAX
+#define ___CPU_RELAX()
+#endif
+
+typedef struct ___thread_struct
+  {
+    void (*start_fn) ___P((struct ___thread_struct *self),());
+
+    void *data_ptr;
+    ___SCMOBJ data_scmobj;
+
+#ifdef ___USE_POSIX_THREAD_SYSTEM
+
+    pthread_t thread_id;
+
+#endif
+
+#ifdef ___USE_WIN32_THREAD_SYSTEM
+
+    HANDLE thread_handle;
+    DWORD thread_id;
+
+#endif
+  } ___thread;
+
+
+/*---------------------------------------------------------------------------*/
+
+/*
+ * Activity log structures.
+ */
+
+#ifdef ___ACTIVITY_LOG
+
+typedef struct ___actlog_activity
+  {
+    ___U8 group;  /* group this activity belongs to */
+    ___U32 color; /* RGB color of this activity when shown visually */
+    char *name;   /* name of this activity */
+  } ___actlog_activity;
+
+typedef struct ___actlog_transition
+  {
+    ___U16 type;  /* activity type */
+    ___U64 stamp; /* time stamp when activity started */
+  } ___actlog_transition;
+
+typedef struct ___vmstate_actlog
+  {
+    ___MUTEX mut;
+    ___actlog_activity *activities;
+    int nb_activities;
+  } ___vmstate_actlog;
+
+typedef struct ___pstate_actlog
+  {
+    ___actlog_transition *transitions; /* array of transitions */
+    ___actlog_transition *last;        /* pointer to last transition */
+    ___U16 *stack;
+    int sp;
+  } ___pstate_actlog;
+
+#define ___ACTLOG_COLOR_black     0x000000
+#define ___ACTLOG_COLOR_white     0xFFFFFF
+#define ___ACTLOG_COLOR_red       0xFF0000
+#define ___ACTLOG_COLOR_green     0x00FF00
+#define ___ACTLOG_COLOR_blue      0x0000FF
+#define ___ACTLOG_COLOR_yellow    0xFFFF00
+#define ___ACTLOG_COLOR_magenta   0xFF00FF
+#define ___ACTLOG_COLOR_pink      0xFF8080
+#define ___ACTLOG_COLOR_gray      0x808080
+#define ___ACTLOG_COLOR_brown     0x800000
+#define ___ACTLOG_COLOR_orange    0xFF8000
+#define ___ACTLOG_COLOR_purple    0x803E75
+#define ___ACTLOG_COLOR_lightblue 0xA6BDD7
+#define ___ACTLOG_COLOR_violet    0x53377A
+
+#define ___ACTLOG_COLOR__         0x1000000
+
+#define ___ACTLOG_COLOR_rgb(r,g,b) (((___U32)(r)<<16)+((g)<<8)+(b))
+
+#define ___ACTLOG_COLOR(color)___ACTLOG_COLOR_##color
+
+#define ___ACTIVITY_START_STOP 0xffff
+
+#define ___ACTLOG(name,color) \
+do { \
+  ___processor_state ___ps = ___PSTATE; \
+  ___ACTLOG_PS(name,color); \
+} while (0)
+
+#define ___ACTLOG_PS(name,color) \
+do { \
+  static ___U16 ___actlog_activity_##name = ___ACTIVITY_START_STOP; \
+  ___EXT(___actlog_add_pstate)(___ps,&___actlog_activity_##name,#name,___ACTLOG_COLOR(color)); \
+} while (0)
+
+#define ___ACTLOG_BEGIN(name,color) \
+do { \
+  ___processor_state ___ps = ___PSTATE; \
+  ___ACTLOG_BEGIN_PS(name,color); \
+} while (0)
+
+#define ___ACTLOG_BEGIN_PS(name,color) \
+do { \
+  static ___U16 ___actlog_activity_##name = ___ACTIVITY_START_STOP; \
+  ___EXT(___actlog_begin_pstate)(___ps,&___actlog_activity_##name,#name,___ACTLOG_COLOR(color)); \
+} while (0)
+
+#define ___ACTLOG_END() \
+do { \
+  ___processor_state ___ps = ___PSTATE; \
+  ___ACTLOG_END_PS(); \
+} while (0)
+
+#define ___ACTLOG_END_PS() \
+do { \
+  ___EXT(___actlog_end_pstate)(___ps); \
+} while (0)
+
+#else
+
+#define ___ACTLOG(name,color)
+
+#define ___ACTLOG_PS(name,color)
+
+#define ___ACTLOG_BEGIN(name,color)
+
+#define ___ACTLOG_BEGIN_PS(name,color)
+
+#define ___ACTLOG_END()
+
+#define ___ACTLOG_END_PS()
+
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
+/* TODO: where to put this? */
+
+/* Memory management */
+
+/*
+ * Movable Scheme objects are allocated in an area of memory
+ * distributed in multiple noncontiguous sections (collectively
+ * called the "msections").  All sections are of the same size and are
+ * allocated through the '___alloc_mem' function.  The number of
+ * sections can expand and contract to accommodate the needs of the
+ * program.
+ */
+
+typedef struct ___msect
+  {
+    int index;             /* index in list of sections */
+    int pos;               /* position in msections's 'sections' array */
+    ___WORD *alloc;        /* heap allocation pointer, grows towards high addr. */
+    struct ___msect *prev; /* previous section in list of sections */
+    struct ___msect *next; /* next section in list of sections */
+    ___WORD base[1];       /* content of section */
+  } ___msection;
+
+#define ___sizeof_msection(n) (sizeof (___msection) + ((n)-1) * ___WS)
+
+typedef struct
+  {
+    int max_nb_sections;      /* actual size of 'sections' array */
+    int nb_sections;          /* number of sections */
+    ___msection *head;        /* head of doubly-linked list of sections */
+    ___msection *tail;        /* tail of doubly-linked list of sections */
+    ___msection *sections[1]; /* each section ordered by address */
+                              /* (increasing order if ___ALLOC_MEM_UP */
+                              /* is defined otherwise decreasing order) */
+  } ___msections;
+
+#define ___sizeof_msections(n) (sizeof (___msections) + ((n)-1) * sizeof (___msection*))
+
+/*
+ * Header structure of reference counted blocks of memory.
+ */
+
+typedef struct ___rc_header_struct
+  {
+    struct ___rc_header_struct *prev;
+    struct ___rc_header_struct *next;
+    ___SCMOBJ refcount; /* integer but declared ___SCMOBJ for alignment */
+    ___SCMOBJ data; /* needed for C closures */
+  } ___rc_header;
+
+typedef struct ___pstate_mem_struct {
+
+/* msection where continuation frames are currently being allocated */
+___msection *stack_msection_;
+
+/* start of allocation of continuation frames in stack_msection */
+___WORD *alloc_stack_start_;
+
+/* allocation pointer for continuation frames in stack_msection */
+___WORD *alloc_stack_ptr_;
+
+/* allocation limit for continuation frames in stack_msection */
+___WORD *alloc_stack_limit_;
+
+/* msection where movable objects are currently being allocated */
+___msection *heap_msection_;
+
+/* start of allocation of movable objects in heap_msection */
+___WORD *alloc_heap_start_;
+
+/* allocation pointer for movable objects in heap_msection */
+___WORD *alloc_heap_ptr_;
+
+/* allocation limit for movable objects in heap_msection */
+___WORD *alloc_heap_limit_;
+
+/* list of nonexecutable wills */
+___WORD nonexecutable_wills_;
+
+#ifdef ___CALL_GC_FREQUENTLY
+int gc_calls_to_punt_;
+#endif
+} ___pstate_mem;
+
+typedef struct ___vmstate_mem_struct {
+
+/* size of heap in words (number of words that can be occupied) */
+___SIZE_TS heap_size_;
+
+/*
+ * 'normal_overflow_reserve' is the number of words reserved in the
+ * heap in normal circumstances for handling heap overflows.
+ */
+___SIZE_TS normal_overflow_reserve_;
+
+/*
+ * 'overflow_reserve' is the number of words currently reserved in the
+ * heap for handling heap overflows.  Initially 'overflow_reserve' is
+ * set to 'normal_overflow_reserve'.  When a heap overflow occurs,
+ * some fraction of the 'overflow_reserve' is made available to the
+ * heap overflow handler.  When a GC makes at least
+ * 'normal_overflow_reserve' free, then 'overflow_reserve' is reset to
+ * 'normal_overflow_reserve'.
+ */
+___SIZE_TS overflow_reserve_;
+
+/* words occupied by nonmovable objects */
+___SIZE_TS words_nonmovable_;
+
+/* words occupied in heap by movable objects excluding current msections */
+___SIZE_TS words_prev_msections_;
+
+/* list of still objects */
+___WORD still_objs_;
+
+/* still objects remaining to scan */
+___WORD still_objs_to_scan_;
+
+/* the msections */
+___msections *the_msections_;
+
+/* location of tospace in each msection */
+___BOOL tospace_at_top_;
+
+/* number of msections used */
+int nb_msections_used_;
+
+/* last msection allocated */
+___msection *alloc_msection_;
+
+/* msection currently being scanned */
+___msection *scan_msection_;
+
+/* scan pointer in msection being scanned */
+___WORD *scan_ptr_;
+
+/* indicates if weak references must be traversed */
+___BOOL traverse_weak_refs_;
+
+/* GC hash tables reached by GC */
+___WORD reached_gc_hash_tables_;
+
+/* list of executable wills */
+___WORD executable_wills_;
+
+/* Head of list of reference counted blocks of memory */
+___rc_header rc_head_;
+
+/*
+ * Garbage collection statistics.
+ */
+
+___F64 nb_gcs_;
+___F64 gc_user_time_;
+___F64 gc_sys_time_;
+___F64 gc_real_time_;
+___F64 bytes_allocated_minus_occupied_;
+
+___F64 last_gc_user_time_;
+___F64 last_gc_sys_time_;
+___F64 last_gc_real_time_;
+___F64 last_gc_heap_size_;
+___F64 last_gc_alloc_;
+___F64 last_gc_live_;
+___F64 last_gc_movable_;
+___F64 last_gc_nonmovable_;
+
+} ___vmstate_mem;
+
+typedef struct ___gstate_mem_struct {
+
+  /*
+   * Permanent objects are allocated in sections called "psections".
+   * Each section contains multiple objects.  The sections are kept in a
+   * list so that the storage they occupy can be reclaimed when the
+   * program terminates.
+   */
+
+  void *psections;       /* list of psections */
+  ___WORD *palloc_ptr;   /* allocation pointer in current psection */
+  ___WORD *palloc_limit; /* allocation limit in current psection */
+
+  /*
+   * Global variables.
+   */
+
+  ___SIZE_T nb_glo_vars;    /* number of global variables */
+
+  ___glo_struct *glo_list_head;  /* list of global variables */
+  ___glo_struct *glo_list_tail;
+
+} ___gstate_mem;
+
+/*---------------------------------------------------------------------------*/
+
 #include "MemoryBroker.h"
 #include "MemoryManager.h"
 
@@ -6225,6 +6956,7 @@ typedef struct ___processor_state_struct
     ___pstate_actlog actlog; /* activity log state */
 #endif
 
+    //___pstate_mem mem; /* memory management state */
     MemoryManager mem; /* memory management state */
 
 #ifdef ___DEBUG_CTRL_FLOW_HISTORY
@@ -6375,6 +7107,7 @@ typedef struct ___virtual_machine_state_struct
     ___vmstate_actlog actlog; /* activity log state */
 #endif
 
+    //___vmstate_mem mem; /* memory management state */
     MemoryBroker mem; /* shared memory management state */
 
     ___SCMOBJ main_module_id; /* symbol identifying the VM's main module */

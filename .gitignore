@@ -80,6 +80,7 @@ include/env.h
 include/typ.h
 
 lib/guide/guidepro
+lib/guide/_*.c
 lib/_*.c
 
 prebuilt/macosx/build-phase2

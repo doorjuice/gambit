@@ -83,7 +83,11 @@ ___WORD* MovableObject::move(___PSDNC) {
 }
 
 ___WORD* MovableObject::forwardTo(___WORD* dest) {
-    if (___COMPARE_AND_SWAP_WORD(body-1, getHead(), 
+    *dest++ = getHead();
+    body[-1] = ___TAG((dest - ___BODY_OFS), ___FORW);
+    body = ___memcpy(dest, body, getLength());
+    return dest + getLength();
+    /*if (___COMPARE_AND_SWAP_WORD(body-1, getHead(), 
                                  ___TAG((dest+1 - ___BODY_OFS), ___FORW)) 
         == getHead()) {
         *dest++ = getHead();
@@ -93,7 +97,7 @@ ___WORD* MovableObject::forwardTo(___WORD* dest) {
     else {
         body = ___UNTAG_AS(body[-1], ___FORW) + ___BODY_OFS;
         return dest;
-    }
+    }*/
 }
 
 void MovableObject::gatherStats() {
@@ -113,8 +117,11 @@ StillObject::StillObject(___WORD* obj)
     assert(isStill());
 }
 
-void StillObject::mark(___PSDNC) {
+___WORD StillObject::mark(___WORD scanList) { //___PSDNC) {
     assert(!isMarked());
-    ___PSGET
-    ___vm_mem.markStillObjectForScan(body - ___STILL_BODY_OFS);
+    body[___STILL_MARK_OFS - ___STILL_BODY_OFS] = scanList;
+    scanList = ___CAST(___WORD,body - ___STILL_BODY_OFS);
+    return scanList;
+    //___PSGET
+    //___vm_mem.markStillObjectForScan(body - ___STILL_BODY_OFS);
 }

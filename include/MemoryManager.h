@@ -1,7 +1,7 @@
 #ifndef MemoryManager_H
 #define MemoryManager_H
 
-#include "mem_struct.h"
+//#include "mem_struct.h"
 
 
 /*---------------------------------------------------------------------------*/
