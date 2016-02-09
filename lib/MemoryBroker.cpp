@@ -1,9 +1,8 @@
-#include "gambit.h"
+#include "gambit.h" //TODO replace me with "MemoryBroker.h"
+#include "mem.h"
 
-#include "MemoryAllocatedObject.h" //FIXME temp include
 
-
-const ___WORD MemoryBroker::MSECTION_SIZE = 131072; //TODO sync with defined value
+const ___WORD MemoryBroker::MSECTION_SIZE = ___MSECTION_SIZE;
 const ___WORD MemoryBroker::MSECTION_HALF = MSECTION_SIZE >> 1;
 
 

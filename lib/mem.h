@@ -68,7 +68,32 @@
 
 /*---------------------------------------------------------------------------*/
 
-#ifdef ___DEBUG
+/* Constants related to representation of permanent and still objects: */
+
+#ifdef ___USE_HANDLES
+    #define ___PERM_HAND_OFS 0
+    #define ___PERM_BODY_OFS 2
+#else
+    #define ___PERM_HAND_OFS ___PERM_BODY_OFS
+    #define ___PERM_BODY_OFS 1
+#endif
+
+#define ___STILL_LINK_OFS 0
+#define ___STILL_REFCOUNT_OFS 1
+#define ___STILL_LENGTH_OFS 2
+#define ___STILL_MARK_OFS 3
+#ifdef ___USE_HANDLES
+    #define ___STILL_HAND_OFS 4
+    #define ___STILL_BODY_OFS 6
+#else
+    #define ___STILL_HAND_OFS ___STILL_BODY_OFS
+    #define ___STILL_BODY_OFS (5+1)/************/
+#endif
+
+
+/*---------------------------------------------------------------------------*/
+
+#ifdef ___DEBUG_GARBAGE_COLLECT
 
 /*
  * Defining the symbol ENABLE_CONSISTENCY_CHECKS will enable the GC to
@@ -79,18 +104,23 @@
  * very extensive and consequently are expensive.  They should only be
  * used for debugging.
  */
+
 #define ENABLE_CONSISTENCY_CHECKS
+
 
 /*
  * Defining the symbol GATHER_STATS will cause the GC to gather
  * statistics on the objects it encounters in the heap.
  */
+
 #define GATHER_STATS
+
 
 /*
  * Defining the symbol SHOW_FRAMES will cause the GC to print out a
  * trace of the continuation frames that are processed.
  */
+
 #undef SHOW_FRAMES
 
 #endif

@@ -1,7 +1,5 @@
 #include "MemoryAllocatedObject.h"
 
-#include "MemoryManager.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -101,12 +99,14 @@ ___WORD* MovableObject::forwardTo(___WORD* dest) {
 }
 
 void MovableObject::gatherStats() {
+#ifdef GATHER_STATS
     if (getSubtype() == ___sPAIR)
         movable_pair_objs++;
     else if (getLength() <= MAX_STAT_SIZE)
         movable_subtyped_objs[getLength()]++;
     else
         movable_subtyped_objs[MAX_STAT_SIZE+1]++;
+#endif
 }
 
 

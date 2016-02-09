@@ -3,6 +3,7 @@
 .hg
 
 makefile
+configure
 config.status
 autom4te.cache
 temp_*
@@ -77,7 +78,6 @@ include/config.h
 include/gambit.h
 include/gambit-not*.h
 include/env.h
-include/typ.h
 
 lib/guide/guidepro
 lib/guide/_*.c

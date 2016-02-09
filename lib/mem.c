@@ -13,7 +13,6 @@
 #include "c_intf.h"
 #include "actlog.h"
 
-#include "MemoryManager.h"
 #include "MemoryAllocatedObject.h"
 
 /* The following includes are needed for debugging. */
@@ -26,41 +25,6 @@
 #ifdef ___DEBUG_ALLOC_MEM_TRACE
 #define ___alloc_mem(bytes) ___alloc_mem_debug(bytes,__LINE__,__FILE__)
 #endif
-#endif
-
-
-/*---------------------------------------------------------------------------*/
-
-#ifdef ___DEBUG_GARBAGE_COLLECT
-
-/*
- * Defining the symbol ENABLE_CONSISTENCY_CHECKS will enable the GC to
- * perform checks that detect when the heap is in an inconsistent
- * state.  This is useful to detect bugs in the GC and the rest of the
- * system.  To perform the consistency checks, the verbosity level in
- * ___GSTATE->setup_params.debug_settings must be at least 1.  The checks are
- * very extensive and consequently are expensive.  They should only be
- * used for debugging.
- */
-
-#define ENABLE_CONSISTENCY_CHECKS
-
-
-/*
- * Defining the symbol GATHER_STATS will cause the GC to gather
- * statistics on the objects it encounters in the heap.
- */
-
-#define GATHER_STATS
-
-
-/*
- * Defining the symbol SHOW_FRAMES will cause the GC to print out a
- * trace of the continuation frames that are processed.
- */
-
-#undef SHOW_FRAMES
-
 #endif
 
 

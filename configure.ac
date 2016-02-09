@@ -2778,15 +2778,17 @@ AC_PROG_MAKE_SET
 
 ###############################################################################
 #
-# Merge all the fragments into gambit.h (before doing further substitutions).
+# Merge all the fragments into gambit.h (before applying the substitutions).
 
 FILE_ENV_H="include/env.h"
 FILE_TYP_H="include/typ.h"
+FILE_OBJ_H="include/obj.h"
 
 AC_SUBST_FILE(FILE_ENV_H)
 AC_SUBST_FILE(FILE_TYP_H)
+AC_SUBST_FILE(FILE_OBJ_H)
 
-AC_CONFIG_FILES([makefile include/makefile include/env.h include/typ.h include/gambit.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile contrib/xactlog/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
+AC_CONFIG_FILES([makefile include/makefile include/env.h include/gambit.h lib/makefile $RTLIBMAKEFILES gsi/makefile gsc/makefile bin/makefile bin/gambcomp-C.unix bin/gambcomp-C.bat.windows bin/gambdoc.unix bin/gambdoc.bat.windows misc/makefile doc/makefile tests/makefile examples/makefile examples/distr-comp/makefile examples/pi/makefile examples/ring/makefile examples/web-repl/makefile examples/web-server/makefile examples/tcltk/makefile examples/Xlib-simple/makefile examples/pthread/makefile examples/misc/makefile contrib/makefile contrib/GambitREPL/makefile contrib/xactlog/makefile prebuilt/makefile prebuilt/macosx/makefile prebuilt/macosx/build-phase2 prebuilt/windows/makefile prebuilt/windows/build-phase2])
 AC_OUTPUT
 
 if test "$ENABLE_SINGLE_HOST" != yes -a "$C_COMP_LLVM" != yes; then

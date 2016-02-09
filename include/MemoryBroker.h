@@ -1,8 +1,8 @@
 #ifndef MemoryBroker_H
 #define MemoryBroker_H
 
+//#include "obj.h"
 //#include "thread.h"
-//#include "mem_struct.h"
 
 
 /*---------------------------------------------------------------------------*/

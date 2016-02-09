@@ -1,7 +1,7 @@
-#ifndef THREADx_H
-#define THREADx_H
+#ifndef THREAD_H
+#define THREAD_H
 
-#include "def.h"
+#include "typ.h"
 
 /*
  * Thread system inlined operations.
