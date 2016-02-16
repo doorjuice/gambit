@@ -575,7 +575,7 @@ void *ptr;)
  * 'nb_sections' field.
  */
 
-___HIDDEN void adjust_msections
+void adjust_msections
    ___P((___msections **msp,
          int n),
         (msp,

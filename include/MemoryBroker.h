@@ -16,6 +16,8 @@ class MemoryBroker : public ___vmstate_mem {
     public:
     static const ___WORD MSECTION_SIZE, MSECTION_HALF;
     
+    MemoryBroker(int nbProcessors);
+    
     inline ___WORD getTospaceOffset() const {
         return tospaceOffset;
     }

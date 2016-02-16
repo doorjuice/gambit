@@ -4,10 +4,33 @@
 
 //#include "MemoryBroker.h"
 
+#include <assert.h>
+
 
 void MemoryManager::reportFatalOverflow(char* msg) {
     char* msgs[] = {msg, NULL};
     ___fatal_error(msgs);
+}
+
+MemoryManager::MemoryManager() {
+    //assert(broker != NULL);
+    
+  /*
+   * Allocate processor's stack and heap.
+   */
+
+  //stack_msection_ = 0;
+  //heap_msection_ = 0;
+
+  //nextStackSection(); /* allocate one msection for stack */
+  //nextHeapSection();  /* allocate one msection for local heap */
+
+  /*
+   * Setup nonexecutable will list.
+   */
+
+  //nonexecutable_wills_ = ___TAG(0,0); /* tagged empty list */
+
 }
 
 ___WORD* MemoryManager::requireHeapSpace(const ___SIZE_TS size) {

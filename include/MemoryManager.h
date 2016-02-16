@@ -17,6 +17,8 @@ class MemoryManager : public ___pstate_mem {
     MemoryBroker* broker;
     
     public:
+    MemoryManager();
+    
     static void reportFatalOverflow(char* msg);
     
     inline void updateHeapPtr(___WORD* allocPtr) {
