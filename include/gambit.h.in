@@ -6149,12 +6149,12 @@ do { \
 
 /*---------------------------------------------------------------------------*/
 
-#include "MemoryBroker.h"
-#include "MemoryManager.h"
-
 typedef struct ___processor_state_struct *___processor_state;
 typedef struct ___virtual_machine_state_struct *___virtual_machine_state;
 typedef struct ___global_state_struct *___global_state;
+
+#include "MemoryBroker.h"
+#include "MemoryManager.h"
 
 /* For implementation of on_all_processors */
 
@@ -6365,7 +6365,7 @@ typedef struct ___virtual_machine_state_struct
 
 #endif
 
-    ___virtual_machine_state_struct() : mem(nb_processors) {
+    ___virtual_machine_state_struct() {
         for (int i = 0; i < ___MAX_PROCESSORS; i++)
             pstate[i].mem.broker = &mem;
     }

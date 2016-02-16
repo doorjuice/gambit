@@ -575,7 +575,7 @@ void *ptr;)
  * 'nb_sections' field.
  */
 
-void adjust_msections
+___HIDDEN void adjust_msections
    ___P((___msections **msp,
          int n),
         (msp,
@@ -3099,11 +3099,6 @@ ___virtual_machine_state ___vms;)
 
 ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 {
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  int init_nb_sections;
-
 #ifndef ___SINGLE_VM
 
   /*
@@ -3126,10 +3121,9 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 
   /* TODO: implement expansion of glos array when number of globals grows beyond 20000 */
 
-  { int n = 20000;
-    ___vms->glos = ___CAST(___SCMOBJ*,___alloc_mem (n * sizeof (___SCMOBJ)));
-    while (--n>=0) { ___vms->glos[n] = ___UNB1; }
-  }
+  int n = 20000;
+  ___vms->glos = ___CAST(___SCMOBJ*,___alloc_mem (n * sizeof (___SCMOBJ)));
+  while (--n>=0) { ___vms->glos[n] = ___UNB1; }
 
 #endif
 
@@ -3139,8 +3133,8 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
    * ___cleanup_mem_vmstate will not access dangling pointers.
    */
 
-  the_msections = 0;
-  still_objs    = 0;
+  ___vms->mem.the_msections_ = 0;
+  ___vms->mem.still_objs_    = 0;
 
   /*
    * Setup reference counted memory management.
@@ -3148,36 +3142,12 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 
   setup_rc (___vms);
 
-  /*
-   * Set the overflow reserve so that the rest parameter handler can
-   * construct the rest parameter list without having to call the
-   * garbage collector.
-   */
-
-  normal_overflow_reserve = 2*((___MAX_NB_PARMS+___SUBTYPED_OVERHEAD) +
-                               ___MAX_NB_ARGS*(___PAIR_SIZE+___PAIR_OVERHEAD));
-  overflow_reserve = normal_overflow_reserve;
-
-  /* Setup GC statistics */
-
-  nb_gcs = 0.0;
-  gc_user_time = 0.0;
-  gc_sys_time = 0.0;
-  gc_real_time = 0.0;
-  bytes_allocated_minus_occupied = 0.0;
-
-  last_gc_real_time = 0.0;
-  last_gc_heap_size = ___CAST(___F64,heap_size) * ___WS;
-  last_gc_live = 0.0;
-  last_gc_movable = 0.0;
-  last_gc_nonmovable = 0.0;
-
   /* Allocate Gambit VM heap */
 
-  init_nb_sections = ((___GSTATE->setup_params.min_heap >> ___LWS) +
-                      overflow_reserve + 2*___MSECTION_FUDGE +
-                      2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1) - 1) /
-                     (2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1));
+  int init_nb_sections = ((___GSTATE->setup_params.min_heap >> ___LWS) +
+                          ___vms->mem.overflow_reserve_ + 2*___MSECTION_FUDGE +
+                          2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1) - 1) /
+                         (2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1));
 
   if (init_nb_sections < ___MIN_NB_MSECTIONS)
     init_nb_sections = ___MIN_NB_MSECTIONS;
@@ -3190,10 +3160,10 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
   if (init_nb_sections < 2*___vms->nb_processors)
     init_nb_sections = 2*___vms->nb_processors;
 
-  adjust_msections (&the_msections, init_nb_sections);
+  adjust_msections (&___vms->mem.the_msections_, init_nb_sections);
 
-  if (the_msections == 0 ||
-      the_msections->nb_sections != init_nb_sections)
+  if (___vms->mem.the_msections_ == 0 ||
+      ___vms->mem.the_msections_->nb_sections != init_nb_sections)
     return ___FIX(___HEAP_OVERFLOW_ERR);
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
@@ -3205,21 +3175,15 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
     }
 #endif
 
-  words_nonmovable = 0;
-  words_prev_msections = 0;
+#undef ___VMSTATE_MEM
+#define ___VMSTATE_MEM(var) ___vms->mem.var
 
-  tospace_at_top = 0;
-  ___vms->mem.tospaceOffset = 0;
-  nb_msections_used = 0;
-
-  executable_wills = ___TAG(0,___EXECUTABLE_WILL); /* tagged empty list */
-
-  heap_size = WORDS_AVAILABLE;
-
-  return ___FIX(___NO_ERR);
-
+  ___vms->mem.heap_size_ = WORDS_AVAILABLE;
+  
 #undef ___VMSTATE_MEM
 #define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
+
+  return ___FIX(___NO_ERR);
 }
 
 

@@ -9,22 +9,23 @@
 
 class MemoryBroker : public ___vmstate_mem {
     
-    public: //TODO replace me with a proper constructor and private scope
+    private:
     //___MUTEX still_objs_lock_;
-    ___WORD tospaceOffset;
+    ___WORD tospace_offset_;
     
     public:
     static const ___WORD MSECTION_SIZE, MSECTION_HALF;
     
-    MemoryBroker(int nbProcessors);
+    friend ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms);
+    MemoryBroker();
     
     inline ___WORD getTospaceOffset() const {
-        return tospaceOffset;
+        return tospace_offset_;
     }
     
     inline void toggleTospace() {
         tospace_at_top_ = !tospace_at_top_;
-        tospaceOffset = tospace_at_top_ ? MSECTION_HALF : 0;
+        tospace_offset_ = tospace_at_top_ ? MSECTION_HALF : 0;
     }
     
     ___msection* nextMemorySection();
