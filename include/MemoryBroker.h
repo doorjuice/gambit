@@ -7,6 +7,11 @@
 
 /*---------------------------------------------------------------------------*/
 
+extern void* alloc_mem_aligned( ___SIZE_TS words, 
+                                unsigned int multiplier,
+                                unsigned int modulus );
+extern void free_mem_aligned(void *ptr);
+
 class MemoryBroker : public ___vmstate_mem {
     
     private:
@@ -15,9 +20,9 @@ class MemoryBroker : public ___vmstate_mem {
     
     public:
     static const ___WORD MSECTION_SIZE, MSECTION_HALF;
-    
+
+    MemoryBroker();    
     friend ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms);
-    MemoryBroker();
     
     inline ___WORD getTospaceOffset() const {
         return tospace_offset_;
@@ -34,6 +39,10 @@ class MemoryBroker : public ___vmstate_mem {
     //DEPRECATED
     ___WORD* getStartOfTospace(___msection* ms) const;
     ___WORD* getStartOfFromspace(___msection* ms) const;
+    
+    int find_msection (void* ptr) const;
+    void adjust_msections(int n);
+    void free_msections();
 };
 
 #endif
