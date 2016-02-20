@@ -2681,10 +2681,7 @@ ___SIZE_TS live;)
 }
 
 
-___HIDDEN void prepare_mem_pstate
-   ___P((___processor_state ___ps),
-        (___ps)
-___processor_state ___ps;)
+___HIDDEN void prepare_mem_pstate(___processor_state ___ps)
 {
   ___SIZE_TS avail;
   ___SIZE_TS stack_avail;
@@ -2756,57 +2753,21 @@ ___processor_state ___ps;)
 }
 
 
-___SCMOBJ ___setup_mem_pstate
-   ___P((___processor_state ___ps,
-         ___virtual_machine_state ___vms),
-        (___ps,
-         ___vms)
-___processor_state ___ps;
-___virtual_machine_state ___vms;)
+___SCMOBJ ___setup_mem_pstate(___processor_state ___ps, 
+                              ___virtual_machine_state ___vms)
 {
 #ifndef ___SINGLE_THREADED_VMS
-
   ___ps->vmstate = ___vms;
-
 #endif
 
-  /*
-   * Allocate processor's stack and heap.
-   */
-
-  stack_msection = 0;
-  heap_msection = 0;
-
-  ___ps_mem.nextStackSection(); /* allocate one msection for stack */
-  ___ps_mem.nextHeapSection();  /* allocate one msection for local heap */
-
-  /*
-   * Create "break frame" of initial top section.
-   */
-
-  ___ps->stack_start = alloc_stack_start;
-  alloc_stack_ptr = alloc_stack_start;
-
-  ___FP_ADJFP(alloc_stack_ptr,___BREAK_FRAME_SPACE)
-  ___FP_SET_STK(alloc_stack_ptr,-___BREAK_FRAME_NEXT,___END_OF_CONT_MARKER)
-
-  ___ps->stack_break = alloc_stack_ptr;
-
-  /*
-   * Setup nonexecutable will list.
-   */
-
-  nonexecutable_wills = ___TAG(0,0); /* tagged empty list */
+  ___ps_mem.init();
+  ___ps->stack_start = ___ps_mem.alloc_stack_start_;
+  ___ps->stack_break = ___ps_mem.alloc_stack_ptr_;
 
 #ifdef ___DEBUG_CTRL_FLOW_HISTORY
-
-  {
-    int i;
-    ___ps->ctrl_flow_history_index = 0;
-    for (i=___CTRL_FLOW_HISTORY_LENGTH-1; i>=0; i--)
-      ___ps->ctrl_flow_history[i].line = 0;
-  }
-
+  ___ps->ctrl_flow_history_index = 0;
+  for (int i = ___CTRL_FLOW_HISTORY_LENGTH-1; i >= 0; i--)
+    ___ps->ctrl_flow_history[i].line = 0;
 #endif
 
 #ifdef ___DEBUG_STACK_LIMIT
@@ -2824,7 +2785,7 @@ ___virtual_machine_state ___vms;)
   ___ps->heartbeat_countdown = ___ps->heartbeat_interval;
 #endif
 
-  prepare_mem_pstate (___ps);
+  prepare_mem_pstate(___ps);
 
   return ___FIX(___NO_ERR);
 }
@@ -2866,14 +2827,14 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
    * ___cleanup_mem_vmstate will not access dangling pointers.
    */
 
-  ___vms->mem.the_msections_ = 0;
-  ___vms->mem.still_objs_    = 0;
+  ___vms->mem.the_msections_ = NULL;
+  ___vms->mem.still_objs_    = NULL;
 
   /*
    * Setup reference counted memory management.
    */
 
-  setup_rc (___vms);
+  setup_rc(___vms);
 
   /* Allocate Gambit VM heap */
 
@@ -2895,17 +2856,16 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
 
   ___vms->mem.adjust_msections(init_nb_sections);
 
-  if (___vms->mem.the_msections_ == 0 ||
+  if (___vms->mem.the_msections_ == NULL ||
       ___vms->mem.the_msections_->nb_sections != init_nb_sections)
     return ___FIX(___HEAP_OVERFLOW_ERR);
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
-  if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1)
-    {
+  if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) >= 1) {
       zap_fromspace (___vms);
       stack_fudge_used = 0;
       heap_fudge_used = 0;
-    }
+  }
 #endif
 
 #undef ___VMSTATE_MEM

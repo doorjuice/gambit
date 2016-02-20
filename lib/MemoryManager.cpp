@@ -12,25 +12,33 @@ void MemoryManager::reportFatalOverflow(char* msg) {
     ___fatal_error(msgs);
 }
 
-MemoryManager::MemoryManager() {
-    //assert(broker != NULL);
+void MemoryManager::init() {
+    assert(broker != NULL); // You can think of 'init' as a delayed constructor
     
-  /*
-   * Allocate processor's stack and heap.
-   */
-
-  //stack_msection_ = 0;
-  //heap_msection_ = 0;
-
-  //nextStackSection(); /* allocate one msection for stack */
-  //nextHeapSection();  /* allocate one msection for local heap */
-
-  /*
-   * Setup nonexecutable will list.
-   */
-
-  //nonexecutable_wills_ = ___TAG(0,0); /* tagged empty list */
-
+   /*
+    * Allocate processor's stack and heap.
+    */
+    
+    stack_msection_ = NULL;
+    heap_msection_ = NULL;
+    
+    nextStackSection(); /* allocate one msection for stack */
+    nextHeapSection();  /* allocate one msection for local heap */
+    
+   /*
+    * Create "break frame" of initial top section.
+    */
+    
+    alloc_stack_ptr_ = alloc_stack_start_;
+    
+    ___FP_ADJFP(alloc_stack_start_, ___BREAK_FRAME_SPACE)
+    ___FP_SET_STK(alloc_stack_start_, -___BREAK_FRAME_NEXT, ___END_OF_CONT_MARKER)
+    
+   /*
+    * Setup nonexecutable will list.
+    */
+    
+    nonexecutable_wills_ = ___TAG(0,0); /* tagged empty list */
 }
 
 ___WORD* MemoryManager::requireHeapSpace(const ___SIZE_TS size) {
