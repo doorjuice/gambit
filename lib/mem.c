@@ -358,48 +358,6 @@ void free_mem_aligned(void *ptr)
 
 /* Allocation of reference counted blocks of memory. */
 
-___HIDDEN void setup_rc
-   ___P((___virtual_machine_state ___vms),
-        (___vms)
-___virtual_machine_state ___vms;)
-{
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  rc_head.prev = &rc_head;
-  rc_head.next = &rc_head;
-  rc_head.refcount = 1;
-  rc_head.data = ___FAL;
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
-}
-
-___HIDDEN void cleanup_rc
-   ___P((___virtual_machine_state ___vms),
-        (___vms)
-___virtual_machine_state ___vms;)
-{
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  ___rc_header *h = rc_head.next;
-
-  rc_head.prev = &rc_head;
-  rc_head.next = &rc_head;
-
-  while (h != &rc_head)
-    {
-      ___rc_header *next = h->next;
-      ___free_mem (h);
-      h = next;
-    }
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
-}
-
-
 ___EXP_FUNC(void*,___alloc_rc)
    ___P((___PSD
          ___SIZE_T bytes),
@@ -2828,13 +2786,7 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
    */
 
   ___vms->mem.the_msections_ = NULL;
-  ___vms->mem.still_objs_    = NULL;
-
-  /*
-   * Setup reference counted memory management.
-   */
-
-  setup_rc(___vms);
+  ___vms->mem.still_objs_    = 0;
 
   /* Allocate Gambit VM heap */
 
@@ -2944,27 +2896,18 @@ ___SCMOBJ ___setup_mem ___PVOID
 }
 
 
-void ___cleanup_mem_pstate
-   ___P((___processor_state ___ps),
-        (___ps)
-___processor_state ___ps;)
+void ___cleanup_mem_pstate(___processor_state ___ps)
 {
 }
 
 
-void ___cleanup_mem_vmstate
-   ___P((___virtual_machine_state ___vms),
-        (___vms)
-___virtual_machine_state ___vms;)
+void ___cleanup_mem_vmstate(___virtual_machine_state ___vms)
 {
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  ___cleanup_mem_pstate (&___vms->pstate[0]);/*TODO: other processors?*/
+  ___cleanup_mem_pstate(&___vms->pstate[0]);/*TODO: other processors?*/
 
   ___vms->mem.free_msections();
   free_still_objs (___PSANC(&___vms->pstate[0]));/*TODO: other processors?*/
-  cleanup_rc (___vms);
+  ___vms->mem.cleanup_rc();
 
 #ifndef ___SINGLE_VM
 
@@ -2983,13 +2926,10 @@ ___virtual_machine_state ___vms;)
   }
 
 #endif
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
 }
 
 
-void ___cleanup_mem ___PVOID
+void ___cleanup_mem ()
 {
   free_psections ();
 }

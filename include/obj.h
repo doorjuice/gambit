@@ -263,6 +263,7 @@ typedef struct
 
 #define ___sizeof_msections(n) (sizeof (___msections) + ((n)-1) * sizeof (___msection*))
 
+
 typedef struct ___pstate_mem_struct {
 
 /* msection where continuation frames are currently being allocated */
@@ -297,6 +298,7 @@ int gc_calls_to_punt_;
 #endif
 } ___pstate_mem;
 
+
 /*---------------------------------------------------------------------------*/
 
 /*
@@ -310,6 +312,29 @@ typedef struct ___rc_header_struct
     ___SCMOBJ refcount; /* integer but declared ___SCMOBJ for alignment */
     ___SCMOBJ data; /* needed for C closures */
   } ___rc_header;
+
+/*
+ * Garbage collection statistics.
+ */
+
+typedef struct ___vmstate_gcstats_struct
+  {
+    ___F64 nb_gcs_;
+    ___F64 gc_user_time_;
+    ___F64 gc_sys_time_;
+    ___F64 gc_real_time_;
+    ___F64 bytes_allocated_minus_occupied_;
+
+    ___F64 last_gc_user_time_;
+    ___F64 last_gc_sys_time_;
+    ___F64 last_gc_real_time_;
+    ___F64 last_gc_heap_size_;
+    ___F64 last_gc_alloc_;
+    ___F64 last_gc_live_;
+    ___F64 last_gc_movable_;
+    ___F64 last_gc_nonmovable_;
+  } ___vmstate_gcstats;
+
 
 typedef struct ___vmstate_mem_struct {
 
@@ -375,26 +400,10 @@ ___WORD executable_wills_;
 /* Head of list of reference counted blocks of memory */
 ___rc_header rc_head_;
 
-/*
- * Garbage collection statistics.
- */
-
-___F64 nb_gcs_;
-___F64 gc_user_time_;
-___F64 gc_sys_time_;
-___F64 gc_real_time_;
-___F64 bytes_allocated_minus_occupied_;
-
-___F64 last_gc_user_time_;
-___F64 last_gc_sys_time_;
-___F64 last_gc_real_time_;
-___F64 last_gc_heap_size_;
-___F64 last_gc_alloc_;
-___F64 last_gc_live_;
-___F64 last_gc_movable_;
-___F64 last_gc_nonmovable_;
+// GC statistics have been moved to the MemoryBroker
 
 } ___vmstate_mem;
+
 
 /*---------------------------------------------------------------------------*/
 

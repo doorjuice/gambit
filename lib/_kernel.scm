@@ -1754,14 +1754,7 @@ end-of-code
   (let ((will
          (##c-code #<<end-of-code
 
-          ___SCMOBJ will = ___VMSTATE_FROM_PSTATE(___ps)->mem.executable_wills_;
-          if (___UNTAG(will) == 0) /* end of list? */
-            ___RESULT = ___FAL;
-          else
-            {
-              ___VMSTATE_FROM_PSTATE(___ps)->mem.executable_wills_ = ___BODY(will)[0];
-              ___RESULT = will;
-            }
+          ___RESULT = ___VMSTATE_FROM_PSTATE(___ps)->mem.nextExecutableWill();
 
 end-of-code
 )))

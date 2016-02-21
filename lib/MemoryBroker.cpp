@@ -7,8 +7,10 @@ const ___WORD MemoryBroker::MSECTION_HALF = MSECTION_SIZE >> 1;
 
 
 MemoryBroker::MemoryBroker() {
-
-    /*
+    
+    setup_rc(); /* Setup reference counted memory management. */
+  
+   /*
     * Set the overflow reserve so that the rest parameter handler can
     * construct the rest parameter list without having to call the
     * garbage collector.
@@ -72,6 +74,16 @@ void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
         == -1)
         still_objs_to_scan_ = ___CAST(___WORD, stillObject);
     //___MUTEX_UNLOCK(still_objs_lock_);
+}
+
+___SCMOBJ MemoryBroker::nextExecutableWill() {
+    ___WORD will = executable_wills_;
+    if (___UNTAG(will) == 0) /* end of list? */
+        return ___FAL;
+    else {
+        executable_wills_ = ___BODY(will)[0];
+        return will;
+    }
 }
 
 ___WORD* MemoryBroker::getStartOfTospace(___msection* ms) const {
@@ -271,5 +283,25 @@ void MemoryBroker::free_msections() {
   
         free_mem_aligned(the_msections_);
         the_msections_ = NULL;
+    }
+}
+
+void MemoryBroker::setup_rc() {
+    rc_head_.prev = &rc_head_;
+    rc_head_.next = &rc_head_;
+    rc_head_.refcount = 1;
+    rc_head_.data = ___FAL;
+}
+
+void MemoryBroker::cleanup_rc() {
+    ___rc_header* head = rc_head_.next;
+    
+    rc_head_.prev = &rc_head_;
+    rc_head_.next = &rc_head_;
+    
+    while (head != &rc_head_) {
+        ___rc_header* next = head->next;
+        ___free_mem(head);
+        head = next;
     }
 }

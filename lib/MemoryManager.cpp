@@ -49,7 +49,7 @@ ___WORD* MemoryManager::requireHeapSpace(const ___SIZE_TS size) {
 
 ___WORD* MemoryManager::nextHeapSection() {
     if (heap_msection_ != NULL) {
-        broker->words_prev_msections_ += alloc_heap_ptr_ - alloc_heap_start_;
+        broker->addWordsPreviousSections(alloc_heap_ptr_ - alloc_heap_start_);
         heap_msection_->alloc = alloc_heap_ptr_;
     }
     
@@ -68,7 +68,7 @@ ___WORD* MemoryManager::nextHeapSection() {
 
 ___WORD* MemoryManager::nextStackSection() {
     if (stack_msection_ != NULL) {
-        broker->words_prev_msections_ += alloc_stack_start_ - alloc_stack_ptr_;
+        broker->addWordsPreviousSections(alloc_stack_start_ - alloc_stack_ptr_);
         stack_msection_->alloc = alloc_stack_ptr_;
     }
     
