@@ -61,7 +61,7 @@ ___WORD* MemoryManager::nextHeapSection() {
     }
     heap_msection_ = nextSection;
   
-    alloc_heap_start_ = heap_msection_->base + broker->getTospaceOffset();
+    alloc_heap_start_ = broker->getStartOfTospace(heap_msection_);
     alloc_heap_limit_ = alloc_heap_start_ + MemoryBroker::MSECTION_HALF;
     return alloc_heap_ptr_ = alloc_heap_start_;
 }
@@ -80,7 +80,7 @@ ___WORD* MemoryManager::nextStackSection() {
     }
     stack_msection_ = nextSection;
 
-    alloc_stack_limit_ = stack_msection_->base + broker->getTospaceOffset();
+    alloc_stack_limit_ = broker->getStartOfTospace(stack_msection_);
     alloc_stack_start_ = alloc_stack_limit_ + MemoryBroker::MSECTION_HALF;
     return alloc_stack_ptr_ = alloc_stack_start_;
 }

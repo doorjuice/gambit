@@ -367,26 +367,13 @@ ___PSDKR
 ___SIZE_T bytes;)
 {
   ___PSGET
-  ___rc_header *h = ___CAST(___rc_header*,
-                            ___alloc_mem (bytes + sizeof (___rc_header)));
+  ___rc_header* h = ___CAST(___rc_header*,
+                            ___alloc_mem (bytes + sizeof(___rc_header)));
 
-  if (h != 0)
-    {
-      ___rc_header *head = &rc_head;
-      ___rc_header *tail = head->prev;
+  if (h != NULL)
+    return ___vm_mem.alloc_rc(h);
 
-      h->prev = tail;
-      h->next = head;
-      head->prev = h;
-      tail->next = h;
-
-      h->refcount = 1;
-      h->data = ___FAL;
-
-      return ___CAST(void*,h+1);
-    }
-
-  return 0;
+  return NULL;
 }
 
 
@@ -764,8 +751,6 @@ ___processor_state ___ps;
 int subtype;
 ___SIZE_TS bytes;)
 {
-  void *ptr;
-  ___WORD *base;
   ___SIZE_TS words = ___STILL_BODY_OFS + ___WORDS(bytes);
 
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
@@ -775,30 +760,20 @@ ___SIZE_TS bytes;)
    * Account for words allocated only for non-permanent objects.
    */
 
-  words_nonmovable += words;
-
-  if (WORDS_OCCUPIED > heap_size
+  if (___ps_mem.getWordsOccupied() + words > ___vm_mem.getHeapSize()
 #ifdef CALL_GC_FREQUENTLY
       || --___gc_calls_to_punt < 0
 #endif
       )
     {
-      ___BOOL overflow;
-
-      words_nonmovable -= words;
-
-      overflow = ___garbage_collect (___PSP words);
-
-      words_nonmovable += words;
+      ___BOOL overflow = ___garbage_collect(___PSP words);
 
       alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
       alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-      if (overflow || WORDS_OCCUPIED > heap_size)
-        {
-          words_nonmovable -= words;
-          return ___FIX(___HEAP_OVERFLOW_ERR);
-        }
+      if (overflow 
+          || ___ps_mem.getWordsOccupied() + words > ___vm_mem.getHeapSize())
+        return ___FIX(___HEAP_OVERFLOW_ERR);
     }
 
   /*
@@ -810,17 +785,13 @@ ___SIZE_TS bytes;)
    * utilization of the cache.
    */
 
-  ptr = alloc_mem_aligned (words,
-                           8>>___LWS,
-                           (-___STILL_BODY_OFS)&((8>>___LWS)-1));
+  void* ptr = alloc_mem_aligned(words, 8>>___LWS,
+                                (-___STILL_BODY_OFS)&((8>>___LWS)-1));
 
-  if (ptr == 0)
-    {
-      words_nonmovable -= words;
-      return ___FIX(___HEAP_OVERFLOW_ERR);
-    }
+  if (ptr == NULL)
+    return ___FIX(___HEAP_OVERFLOW_ERR);
 
-  base = ___CAST(___WORD*,ptr);
+  ___WORD* base = ___CAST(___WORD*,ptr);
 
   base[___STILL_LINK_OFS] = still_objs;
   still_objs = ___CAST(___WORD,base);
@@ -830,6 +801,8 @@ ___SIZE_TS bytes;)
   base[___STILL_HAND_OFS] = ___CAST(___WORD,base+___STILL_BODY_OFS-___BODY_OFS);
 #endif
   base[___STILL_BODY_OFS-1] = ___MAKE_HD(bytes, subtype, ___STILL);
+
+  ___vm_mem.addStillObject(base);
 
   return ___TAG((base + ___STILL_HAND_OFS - ___BODY_OFS),
                 (subtype == ___sPAIR ? ___tPAIR : ___tSUBTYPED));

@@ -374,7 +374,7 @@ ___WORD still_objs_to_scan_;
 ___msections *the_msections_;
 
 /* location of tospace in each msection */
-___BOOL tospace_at_top_;
+___WORD tospace_at_top_;
 
 /* number of msections used */
 int nb_msections_used_;

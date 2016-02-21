@@ -16,7 +16,6 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     
     private:
     //___MUTEX still_objs_lock_;
-    ___WORD tospace_offset_;
     
     public:
     static const ___WORD MSECTION_SIZE, MSECTION_HALF;
@@ -25,31 +24,53 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     friend ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms);
     friend void ___cleanup_mem_vmstate(___virtual_machine_state ___vms);
     
-    inline ___WORD getTospaceOffset() const {
-        return tospace_offset_;
+    inline ___WORD getHeapSize() {
+        return heap_size_;
     }
     
-    inline void toggleTospace() {
-        tospace_at_top_ = !tospace_at_top_;
-        tospace_offset_ = tospace_at_top_ ? MSECTION_HALF : 0;
+    inline ___WORD getWordsNonMovable() {
+        return words_nonmovable_;
+    }
+    
+    inline void addWordsNonMovable(___WORD nbWords) {
+        words_nonmovable_ += nbWords;
+    }
+    
+    inline ___WORD getWordsPreviousSections() {
+        return words_prev_msections_;
     }
     
     inline void addWordsPreviousSections(___WORD nbWords) {
         words_prev_msections_ += nbWords;
     }
     
-    ___msection* nextMemorySection();
-    void markStillObjectForScan(___WORD* stillObject);
-
-    ___SCMOBJ nextExecutableWill();
+    inline ___WORD* getStartOfTospace(___msection* ms) const {
+        return ms->base + (tospace_at_top_ ? MSECTION_HALF : 0);
+        //return ms->base + (tospace_at_top_ & MSECTION_HALF);
+    }
     
-    //TODO change those?
-    ___WORD* getStartOfTospace(___msection* ms) const;
-    ___WORD* getStartOfFromspace(___msection* ms) const;
+    inline ___WORD* getStartOfFromspace(___msection* ms) const {
+        return ms->base + (tospace_at_top_ ? 0 : MSECTION_HALF);
+        //return ms->base + (~tospace_at_top_ & MSECTION_HALF);
+    }
+
+    inline void toggleTospace() {
+        tospace_at_top_ = !tospace_at_top_;
+        //tospace_at_top_ = ~tospace_at_top_;
+    }
+    
+    //TODO still_objs_to_scan could also be unique per thread
+    void addStillObject(___WORD* stillObject);
+    void markStillObjectForScan(___WORD* stillObject);
+    
+    ___msection* nextMemorySection();
+    ___SCMOBJ nextExecutableWill();
     
     int find_msection (void* ptr) const;
     void adjust_msections(int n);
     void free_msections();
+    
+    void* alloc_rc(___rc_header* rch);
     
     private:
     void setup_rc();

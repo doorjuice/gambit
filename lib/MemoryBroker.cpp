@@ -16,8 +16,8 @@ MemoryBroker::MemoryBroker() {
     * garbage collector.
     */
     
-    normal_overflow_reserve_ = 2*((___MAX_NB_PARMS+___SUBTYPED_OVERHEAD) +
-                                ___MAX_NB_ARGS*(___PAIR_SIZE+___PAIR_OVERHEAD));
+    normal_overflow_reserve_ = 2*( (___MAX_NB_PARMS+___SUBTYPED_OVERHEAD) +
+                                    ___MAX_NB_ARGS*(___PAIR_SIZE+___PAIR_OVERHEAD) );
     overflow_reserve_ = normal_overflow_reserve_;
     
     /* Setup GC statistics */
@@ -38,10 +38,8 @@ MemoryBroker::MemoryBroker() {
     
     words_nonmovable_ = 0;
     words_prev_msections_ = 0;
-    
-    tospace_at_top_ = 0;
-    tospace_offset_ = 0;
     nb_msections_used_ = 0;
+    tospace_at_top_ = 0;
     
     executable_wills_ = ___TAG(0,___EXECUTABLE_WILL); /* tagged empty list */
     
@@ -66,7 +64,12 @@ ___msection* MemoryBroker::nextMemorySection() {
     return result;
 }
 
-//TODO still_objs_to_scan could also be unique per thread
+void MemoryBroker::addStillObject(___WORD* stillObject) {
+    addWordsNonMovable(stillObject[___STILL_LENGTH_OFS]);
+    //stillObject[___STILL_LINK_OFS] = still_objs_;
+    //still_objs_ = ___CAST(___WORD,stillObject);
+}
+
 void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
     //___MUTEX_LOCK(still_objs_lock_);
     if (___COMPARE_AND_SWAP_WORD(stillObject + ___STILL_MARK_OFS, -1, 
@@ -86,13 +89,6 @@ ___SCMOBJ MemoryBroker::nextExecutableWill() {
     }
 }
 
-___WORD* MemoryBroker::getStartOfTospace(___msection* ms) const {
-    return ms->base + (tospace_at_top_ ? MSECTION_HALF : 0);
-}
-
-___WORD* MemoryBroker::getStartOfFromspace(___msection* ms) const {
-    return ms->base + (tospace_at_top_ ? 0 : MSECTION_HALF);
-}
 
 /*---------------------------------------------------------------------------*/
 
@@ -284,6 +280,26 @@ void MemoryBroker::free_msections() {
         free_mem_aligned(the_msections_);
         the_msections_ = NULL;
     }
+}
+
+
+/*---------------------------------------------------------------------------*/
+
+/* Allocation of reference counted blocks of memory. */
+
+void* MemoryBroker::alloc_rc(___rc_header* rch) {
+    ___rc_header* head = &rc_head_;
+    ___rc_header* tail = head->prev;
+
+    rch->prev = tail;
+    rch->next = head;
+    head->prev = rch;
+    tail->next = rch;
+
+    rch->refcount = 1;
+    rch->data = ___FAL;
+
+    return ___CAST(void*, rch + 1);
 }
 
 void MemoryBroker::setup_rc() {
