@@ -26,12 +26,15 @@ class MemoryManager : public ___pstate_mem {
         alloc_heap_ptr_ = allocPtr;
     }
     
+    /* words occupied in heap by movable objects including current msections */
     inline ___WORD getWordsMovable() const {
+        //FIXME why does this require the 'active' ps_state_mem?
         return 2 * (broker->getWordsPreviousSections() +
                     (alloc_stack_start_ - alloc_stack_ptr_) +
                     (alloc_heap_ptr_ - alloc_heap_start_));
     }
     
+    /* words occupied in heap including current msections */
     inline ___WORD getWordsOccupied() const {
         return broker->getWordsNonMovable() + getWordsMovable();
     }

@@ -33,6 +33,12 @@ StillObject* MemoryAllocatedObject::asStill() {
 
 /*---------------------------------------------------------------------------*/
 
+#ifdef GATHER_STATS
+___SIZE_TS MovableObject::movable_pair_objs;
+___SIZE_TS MovableObject::movable_subtyped_objs[MovableObject::MAX_STAT_SIZE + 1];
+#endif
+
+
 MovableObject::MovableObject(___WORD* obj)
     : MemoryAllocatedObject(obj) {
     assert(isMovable());
@@ -98,17 +104,24 @@ ___WORD* MovableObject::forwardTo(___WORD* dest) {
     }*/
 }
 
-void MovableObject::gatherStats() {
 #ifdef GATHER_STATS
+
+void MovableObject::gatherStats() {
     if (getSubtype() == ___sPAIR)
         movable_pair_objs++;
-    else if (getLength() <= MAX_STAT_SIZE)
+    else if (getLength() < MAX_STAT_SIZE)
         movable_subtyped_objs[getLength()]++;
     else
-        movable_subtyped_objs[MAX_STAT_SIZE+1]++;
-#endif
+        movable_subtyped_objs[MAX_STAT_SIZE]++;
 }
 
+void MovableObject::resetStats() {
+    movable_pair_objs = 0;
+    for (int i = 0; i <= MAX_STAT_SIZE; i++)
+        movable_subtyped_objs[i] = 0;
+}
+
+#endif
 
 /*---------------------------------------------------------------------------*/
 
@@ -117,11 +130,8 @@ StillObject::StillObject(___WORD* obj)
     assert(isStill());
 }
 
-___WORD StillObject::mark(___WORD scanList) { //___PSDNC) {
+void StillObject::mark(___PSDNC) {
     assert(!isMarked());
-    body[___STILL_MARK_OFS - ___STILL_BODY_OFS] = scanList;
-    scanList = ___CAST(___WORD,body - ___STILL_BODY_OFS);
-    return scanList;
-    //___PSGET
-    //___vm_mem.markStillObjectForScan(body - ___STILL_BODY_OFS);
+    ___PSGET
+    ___vm_mem.markStillObjectForScan(body - ___STILL_BODY_OFS);
 }

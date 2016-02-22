@@ -792,16 +792,15 @@ ___SIZE_TS bytes;)
     return ___FIX(___HEAP_OVERFLOW_ERR);
 
   ___WORD* base = ___CAST(___WORD*,ptr);
-
-  base[___STILL_LINK_OFS] = still_objs;
-  still_objs = ___CAST(___WORD,base);
   base[___STILL_REFCOUNT_OFS] = 1;
   base[___STILL_LENGTH_OFS] = words;
 #ifdef ___USE_HANDLES
-  base[___STILL_HAND_OFS] = ___CAST(___WORD,base+___STILL_BODY_OFS-___BODY_OFS);
+  base[___STILL_HAND_OFS] = ___CAST(___WORD, base + ___STILL_BODY_OFS - ___BODY_OFS);
 #endif
-  base[___STILL_BODY_OFS-1] = ___MAKE_HD(bytes, subtype, ___STILL);
+  base[___STILL_BODY_OFS - 1] = ___MAKE_HD(bytes, subtype, ___STILL);
 
+  //base[___STILL_LINK_OFS] = still_objs;
+  //still_objs = ___CAST(___WORD,base);
   ___vm_mem.addStillObject(base);
 
   return ___TAG((base + ___STILL_HAND_OFS - ___BODY_OFS),
@@ -1989,8 +1988,7 @@ ___virtual_machine_state ___vms;)
           else if (mao.isStill()) {
             StillObject *so = mao.asStill();
             if (!so->isMarked())
-                still_objs_to_scan = so->mark(still_objs_to_scan);
-              //so->mark(___PSPNC);
+              so->mark(___PSPNC);
           }
           else if (mao.isForwarded()) {
             ___WORD* newAddr = ___UNTAG_AS(mao.getHead(), ___FORW);
@@ -2624,10 +2622,10 @@ ___HIDDEN void prepare_mem_pstate(___processor_state ___ps)
   avail = 0;
   ___ps->mem.gc_calls_to_punt_ = 2000;
 #else
-  if (heap_size < WORDS_OCCUPIED)
+  if (___vm_mem.getHeapSize() < ___ps_mem.getWordsOccupied())
     avail = 0;
   else
-    avail = (heap_size - WORDS_OCCUPIED) / 2;
+    avail = (___vm_mem.getHeapSize() - ___ps_mem.getWordsOccupied()) / 2;
 #endif
 
   stack_avail = avail/2;
@@ -2660,8 +2658,8 @@ ___HIDDEN void prepare_mem_pstate(___processor_state ___ps)
       zap_section (start, end - start);
       if (___DEBUG_SETTINGS_LEVEL(___GSTATE->setup_params.debug_settings) == 3)
         {
-          ___printf ("heap_size          = %d\n", heap_size);
-          ___printf ("WORDS_OCCUPIED     = %d\n", WORDS_OCCUPIED);
+          ___printf ("heap_size          = %d\n", ___vm_mem.getHeapSize());
+          ___printf ("words_occupied     = %d\n", ___ps_mem.getWordsOccupied());
           ___printf ("avail              = %d\n", avail);
           ___printf ("stack_avail        = %d\n", stack_avail);
           ___printf ("heap_avail         = %d\n", heap_avail);
@@ -3785,8 +3783,8 @@ ___SIZE_TS nonmovable_words_needed;)
 
 #ifdef ___DEBUG_GARBAGE_COLLECT
   ___printf ("----------------------------------------- GC\n");
-  ___printf ("heap_size          = %d\n", heap_size);
-  ___printf ("WORDS_OCCUPIED     = %d\n", WORDS_OCCUPIED);
+  ___printf ("heap_size          = %d\n", ___vm_mem.getHeapSize());
+  ___printf ("words_occupied     = %d\n", ___ps_mem.getWordsOccupied());
   ___printf ("___ps->stack_start = 0x%08x\n", ___ps->stack_start);
   ___printf ("___ps->stack_break = 0x%08x\n", ___ps->stack_break);
   ___printf ("___ps->fp          = 0x%08x\n", ___ps->fp);
@@ -3799,16 +3797,10 @@ ___SIZE_TS nonmovable_words_needed;)
 
   bytes_allocated_minus_occupied =
     bytes_allocated_minus_occupied +
-    ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
+    ___CAST(___F64,___ps_mem.getWordsOccupied()) * ___WS;
 
 #ifdef GATHER_STATS
-  //TODO consider moving this to MemoryAllocatedObject.h
-  movable_pair_objs = 0;
-  {
-    int i;
-    for (i=0; i<=MAX_STAT_SIZE+1; i++)
-      movable_subtyped_objs[i] = 0;
-  }
+  MovableObject::resetStats();
 #endif
 
   stack_msection_index = stack_msection->index;
@@ -3929,7 +3921,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
   free_unmarked_still_objs (___PSPNC);
 
-  target_nb_sections = (adjust_heap (WORDS_AVAILABLE, WORDS_OCCUPIED)
+  target_nb_sections = (adjust_heap(WORDS_AVAILABLE, ___ps_mem.getWordsOccupied())
                         - words_nonmovable
                         + normal_overflow_reserve
                         + 2*___MSECTION_FUDGE
@@ -3997,7 +3989,7 @@ ___SIZE_TS nonmovable_words_needed;)
   if (alloc_heap_ptr > alloc_heap_limit - ___MSECTION_FUDGE)
     ___ps_mem.nextHeapSection();
 
-  avail = WORDS_AVAILABLE + overflow_reserve - WORDS_OCCUPIED;
+  avail = WORDS_AVAILABLE + overflow_reserve - ___ps_mem.getWordsOccupied();
 
   if (avail <= overflow_reserve + (WORDS_MOVABLE_USABLE >> 10))
     {
@@ -4011,7 +4003,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
   bytes_allocated_minus_occupied =
     bytes_allocated_minus_occupied -
-    ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
+    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
 
   words_nonmovable -= nonmovable_words_needed;
 
@@ -4025,22 +4017,8 @@ ___SIZE_TS nonmovable_words_needed;)
   sys_time = sys_time_end - sys_time_start;
   real_time = real_time_end - real_time_start;
 
-  nb_gcs = nb_gcs + 1.0;
-  gc_user_time += user_time;
-  gc_sys_time += sys_time;
-  gc_real_time += real_time;
-
-  last_gc_user_time = user_time;
-  last_gc_sys_time = sys_time;
-  last_gc_real_time = real_time;
-  last_gc_heap_size = ___CAST(___F64,heap_size) * ___WS;
-  last_gc_alloc =
-    bytes_allocated_minus_occupied +
-    ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
-  last_gc_live = ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
-  last_gc_movable = ___CAST(___F64,WORDS_MOVABLE) * ___WS;
-  last_gc_nonmovable = ___CAST(___F64,words_nonmovable) * ___WS;
-
+  ___vm_mem.updateStats(___ps_mem, user_time, sys_time, real_time);
+  
   ___raise_interrupt_pstate (___ps, ___INTR_GC); /* raise gc interrupt */
 
   ___ACTLOG_END_PS();
@@ -4090,7 +4068,7 @@ ___PSDKR)
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-  avail = (heap_size - WORDS_OCCUPIED) / 2;
+  avail = (heap_size - ___ps_mem.getWordsOccupied()) / 2;
 
   if (avail > ___MSECTION_WASTE
 #ifdef ___CALL_GC_FREQUENTLY
@@ -4169,7 +4147,7 @@ ___PSDKR)
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-  avail = (heap_size - WORDS_OCCUPIED) / 2;
+  avail = (heap_size - ___ps_mem.getWordsOccupied()) / 2;
 
   if (avail > ___MSECTION_WASTE
 #ifdef ___CALL_GC_FREQUENTLY
@@ -4203,7 +4181,7 @@ ___PSDKR)
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
   return bytes_allocated_minus_occupied +
-         ___CAST(___F64,WORDS_OCCUPIED) * ___WS;
+         ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
 }
 
 

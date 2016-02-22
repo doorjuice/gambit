@@ -329,15 +329,6 @@ extern ___F64 ___bytes_allocated
 #define last_gc_movable         ___VMSTATE_MEM(last_gc_movable_)
 #define last_gc_nonmovable      ___VMSTATE_MEM(last_gc_nonmovable_)
 
-/* words occupied in heap by movable objects including current msections */
-#define WORDS_MOVABLE \
-(2*(words_prev_msections + \
-(alloc_stack_start - alloc_stack_ptr) + \
-(alloc_heap_ptr - alloc_heap_start)))
-
-/* words occupied in heap including current msections */
-#define WORDS_OCCUPIED (words_nonmovable + WORDS_MOVABLE)
-
 /* words usable in msections */
 #define WORDS_MOVABLE_USABLE \
 (2*the_msections->nb_sections*___CAST(___SIZE_TS,((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1)))

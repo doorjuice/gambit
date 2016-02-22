@@ -66,8 +66,8 @@ ___msection* MemoryBroker::nextMemorySection() {
 
 void MemoryBroker::addStillObject(___WORD* stillObject) {
     addWordsNonMovable(stillObject[___STILL_LENGTH_OFS]);
-    //stillObject[___STILL_LINK_OFS] = still_objs_;
-    //still_objs_ = ___CAST(___WORD,stillObject);
+    stillObject[___STILL_LINK_OFS] = still_objs_;
+    still_objs_ = ___CAST(___WORD, stillObject);
 }
 
 void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
@@ -87,6 +87,25 @@ ___SCMOBJ MemoryBroker::nextExecutableWill() {
         executable_wills_ = ___BODY(will)[0];
         return will;
     }
+}
+
+void MemoryBroker::updateStats(const MemoryManager& mman,
+                               ___F64 userTime, ___F64 systemTime, ___F64 realTime) {
+    nb_gcs_ += 1.0;
+    gc_user_time_ += userTime;
+    gc_sys_time_  += systemTime;
+    gc_real_time_ += realTime;
+    
+    last_gc_user_time_ = userTime;
+    last_gc_sys_time_  = systemTime;
+    last_gc_real_time_ = realTime;
+    last_gc_heap_size_ = ___CAST(___F64, getHeapSize()) * ___WS;
+    last_gc_alloc_ =
+        bytes_allocated_minus_occupied_ +
+        ___CAST(___F64, mman.getWordsOccupied()) * ___WS;
+    last_gc_live_ = ___CAST(___F64, mman.getWordsOccupied()) * ___WS;
+    last_gc_movable_ = ___CAST(___F64, mman.getWordsMovable()) * ___WS;
+    last_gc_nonmovable_ = ___CAST(___F64, words_nonmovable_) * ___WS;
 }
 
 

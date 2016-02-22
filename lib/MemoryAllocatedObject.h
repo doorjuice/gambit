@@ -7,21 +7,11 @@
 
 /*---------------------------------------------------------------------------*/
 
-#ifdef GATHER_STATS
-    #define MAX_STAT_SIZE 20
-    ___SIZE_TS movable_pair_objs; //TODO these should have visibility "___HIDDEN" or be moved somewhere better
-    ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE+2];
-#endif
-
-/*---------------------------------------------------------------------------*/
-
-//extern void next_heap_msection(___processor_state ___ps);
-
 class MovableObject;
 class StillObject;
 
 class MemoryAllocatedObject {
-  
+
     protected:
     ___WORD* body;
 
@@ -66,8 +56,16 @@ class MemoryAllocatedObject {
 };
 
 class MovableObject : public MemoryAllocatedObject {
+
+    private:
     static const ___WORD paddingData = ___MAKE_HD_WORDS(0, ___sVECTOR);
     
+#ifdef GATHER_STATS
+    static const ___SIZE_TS MAX_STAT_SIZE = 20;
+    static ___SIZE_TS movable_pair_objs;
+    static ___SIZE_TS movable_subtyped_objs[MAX_STAT_SIZE + 1];
+#endif
+
     public:
     MovableObject(___WORD* obj);
     
@@ -76,10 +74,15 @@ class MovableObject : public MemoryAllocatedObject {
     
     private:
     ___WORD* forwardTo(___WORD* dest);
+    
+#ifdef GATHER_STATS
     void gatherStats();
+    public: static void resetStats();
+#endif
 };
 
 class StillObject : public MemoryAllocatedObject {
+
     public:
     StillObject(___WORD* obj);
     
@@ -87,8 +90,7 @@ class StillObject : public MemoryAllocatedObject {
         return body[___STILL_MARK_OFS - ___STILL_BODY_OFS] != -1;
     }
     
-    ___WORD mark(___WORD scanlist); //___PSDNC);
+    void mark(___PSDNC);
 };
 
 #endif
-

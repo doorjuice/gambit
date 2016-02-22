@@ -12,9 +12,12 @@ extern void* alloc_mem_aligned( ___SIZE_TS words,
                                 unsigned int modulus );
 extern void free_mem_aligned(void *ptr);
 
+class MemoryManager;
+
 class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     
     private:
+    //___vmstate_gcstats gcstats_; TODO replace inheritance with composition
     //___MUTEX still_objs_lock_;
     
     public:
@@ -65,6 +68,9 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     
     ___msection* nextMemorySection();
     ___SCMOBJ nextExecutableWill();
+    
+    void updateStats(const MemoryManager& mman,
+                     ___F64 userTime, ___F64 systemTime, ___F64 realTime);
     
     int find_msection (void* ptr) const;
     void adjust_msections(int n);
