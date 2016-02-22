@@ -392,7 +392,7 @@ ___WORD *scan_ptr_;
 ___BOOL traverse_weak_refs_;
 
 /* GC hash tables reached by GC */
-___WORD reached_gc_hash_tables_;
+___WORD gc_hash_tables_reached_;
 
 /* list of executable wills */
 ___WORD executable_wills_;

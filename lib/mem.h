@@ -312,7 +312,7 @@ extern ___F64 ___bytes_allocated
 #define traverse_weak_refs      ___VMSTATE_MEM(traverse_weak_refs_)
 #define reached_gc_hash_tables  ___VMSTATE_MEM(reached_gc_hash_tables_)
 #define executable_wills        ___VMSTATE_MEM(executable_wills_)
-#define rc_head                 ___VMSTATE_MEM(rc_head_)
+//#define rc_head                 ___VMSTATE_MEM(rc_head_)
 
 #define nb_gcs                  ___VMSTATE_MEM(nb_gcs_)
 #define gc_user_time            ___VMSTATE_MEM(gc_user_time_)

@@ -27,11 +27,11 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     friend ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms);
     friend void ___cleanup_mem_vmstate(___virtual_machine_state ___vms);
     
-    inline ___WORD getHeapSize() {
+    inline ___WORD getHeapSize() const {
         return heap_size_;
     }
     
-    inline ___WORD getWordsNonMovable() {
+    inline ___WORD getWordsNonMovable() const {
         return words_nonmovable_;
     }
     
@@ -39,7 +39,7 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
         words_nonmovable_ += nbWords;
     }
     
-    inline ___WORD getWordsPreviousSections() {
+    inline ___WORD getWordsPreviousSections() const {
         return words_prev_msections_;
     }
     
@@ -62,6 +62,16 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
         //tospace_at_top_ = ~tospace_at_top_;
     }
     
+    inline ___BOOL traverseWeakRefs() const {
+        return traverse_weak_refs_;
+    }
+    
+    inline ___WORD getHashTablesReached() const {
+        return gc_hash_tables_reached_;
+    }
+    
+    void markReachedHashTable(___WORD* hashTable);
+    
     //TODO still_objs_to_scan could also be unique per thread
     void addStillObject(___WORD* stillObject);
     void markStillObjectForScan(___WORD* stillObject);
@@ -69,13 +79,15 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     ___msection* nextMemorySection();
     ___SCMOBJ nextExecutableWill();
     
-    void updateStats(const MemoryManager& mman,
+    void prepareGC(MemoryManager& psmem);
+    void updateStats(const MemoryManager& psmem,
                      ___F64 userTime, ___F64 systemTime, ___F64 realTime);
     
     int find_msection (void* ptr) const;
     void adjust_msections(int n);
     void free_msections();
     
+    inline ___rc_header* get_rc_list() { return &rc_head_; }
     void* alloc_rc(___rc_header* rch);
     
     private:

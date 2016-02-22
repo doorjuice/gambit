@@ -48,6 +48,26 @@ MemoryBroker::MemoryBroker() {
     // later, specifically once the global setup parameter 'min_heap' is known.
 }
 
+void MemoryBroker::addStillObject(___WORD* stillObject) {
+    addWordsNonMovable(stillObject[___STILL_LENGTH_OFS]);
+    stillObject[___STILL_LINK_OFS] = still_objs_;
+    still_objs_ = ___CAST(___WORD, stillObject);
+}
+
+void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
+    //___MUTEX_LOCK(still_objs_lock_);
+    if (___COMPARE_AND_SWAP_WORD(stillObject + ___STILL_MARK_OFS, -1, 
+                                 ___CAST(___WORD, still_objs_to_scan_)) 
+        == -1)
+        still_objs_to_scan_ = ___CAST(___WORD, stillObject);
+    //___MUTEX_UNLOCK(still_objs_lock_);
+}
+
+void MemoryBroker::markReachedHashTable(___WORD* hashTable) {
+    hashTable[0] = gc_hash_tables_reached_;
+    gc_hash_tables_reached_ = ___TAG((hashTable-1), 0);
+}
+
 ___msection* MemoryBroker::nextMemorySection() {
     ___msection* result;
 
@@ -64,21 +84,6 @@ ___msection* MemoryBroker::nextMemorySection() {
     return result;
 }
 
-void MemoryBroker::addStillObject(___WORD* stillObject) {
-    addWordsNonMovable(stillObject[___STILL_LENGTH_OFS]);
-    stillObject[___STILL_LINK_OFS] = still_objs_;
-    still_objs_ = ___CAST(___WORD, stillObject);
-}
-
-void MemoryBroker::markStillObjectForScan(___WORD* stillObject) {
-    //___MUTEX_LOCK(still_objs_lock_);
-    if (___COMPARE_AND_SWAP_WORD(stillObject + ___STILL_MARK_OFS, -1, 
-                                 ___CAST(___WORD, still_objs_to_scan_)) 
-        == -1)
-        still_objs_to_scan_ = ___CAST(___WORD, stillObject);
-    //___MUTEX_UNLOCK(still_objs_lock_);
-}
-
 ___SCMOBJ MemoryBroker::nextExecutableWill() {
     ___WORD will = executable_wills_;
     if (___UNTAG(will) == 0) /* end of list? */
@@ -89,7 +94,23 @@ ___SCMOBJ MemoryBroker::nextExecutableWill() {
     }
 }
 
-void MemoryBroker::updateStats(const MemoryManager& mman,
+void MemoryBroker::prepareGC(MemoryManager& psmem) {
+    words_prev_msections_ = 0;
+    nb_msections_used_ = 0;
+    toggleTospace();
+    
+    psmem.stack_msection_ = NULL;
+    psmem.heap_msection_ = NULL;
+    psmem.nextHeapSection();
+    
+    scan_msection_ = psmem.heap_msection_;
+    scan_ptr_ = psmem.alloc_heap_ptr_;
+    
+    /* maintain list of GC hash tables reached by GC */
+    gc_hash_tables_reached_ = ___TAG(0,0);
+}
+
+void MemoryBroker::updateStats(const MemoryManager& psmem,
                                ___F64 userTime, ___F64 systemTime, ___F64 realTime) {
     nb_gcs_ += 1.0;
     gc_user_time_ += userTime;
@@ -100,11 +121,10 @@ void MemoryBroker::updateStats(const MemoryManager& mman,
     last_gc_sys_time_  = systemTime;
     last_gc_real_time_ = realTime;
     last_gc_heap_size_ = ___CAST(___F64, getHeapSize()) * ___WS;
-    last_gc_alloc_ =
-        bytes_allocated_minus_occupied_ +
-        ___CAST(___F64, mman.getWordsOccupied()) * ___WS;
-    last_gc_live_ = ___CAST(___F64, mman.getWordsOccupied()) * ___WS;
-    last_gc_movable_ = ___CAST(___F64, mman.getWordsMovable()) * ___WS;
+    last_gc_alloc_ = bytes_allocated_minus_occupied_ +
+                     ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
+    last_gc_live_ = ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
+    last_gc_movable_ = ___CAST(___F64, psmem.getWordsMovable()) * ___WS;
     last_gc_nonmovable_ = ___CAST(___F64, words_nonmovable_) * ___WS;
 }
 

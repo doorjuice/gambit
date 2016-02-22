@@ -2274,9 +2274,10 @@ ___HIDDEN void mark_rc
 ___PSDKR)
 {
   ___PSGET
-  ___rc_header *h = rc_head.next;
+  ___rc_header *rc_head = ___vm_mem.get_rc_list();
+  ___rc_header *h = rc_head->next;
 
-  while (h != &rc_head)
+  while (h != rc_head)
     {
       ___rc_header *next = h->next;
       mark_array (___PSP &h->data, 1);
@@ -2345,7 +2346,7 @@ ___WORD *body;)
            * is also marked.  The link field is never scanned.
            */
 
-          if (traverse_weak_refs)
+          if (___vm_mem.traverseWeakRefs())
             mark_array (___PSP body+1, 2); /* scan action and testator */
           else
             {
@@ -2364,23 +2365,21 @@ ___WORD *body;)
           /* Object is a GC hash table */
 
           int flags = ___INT(body[___GCHASHTABLE_FLAGS]);
-          int i;
 
           if ((flags & ___GCHASHTABLE_FLAG_WEAK_KEYS) == 0 &&
               (flags & ___GCHASHTABLE_FLAG_MEM_ALLOC_KEYS))
             {
-              for (i=words-2; i>=___GCHASHTABLE_KEY0; i-=2)
+              for (int i = words-2; i >= ___GCHASHTABLE_KEY0; i -= 2)
                 mark_array (___PSP body+i, 1); /* mark objects in key fields */
             }
 
           if ((flags & ___GCHASHTABLE_FLAG_WEAK_VALS) == 0)
             {
-              for (i=words-1; i>=___GCHASHTABLE_VAL0; i-=2)
+              for (int i = words-1; i >= ___GCHASHTABLE_VAL0; i -= 2)
                 mark_array (___PSP body+i, 1); /* mark objects in value fields */
             }
 
-          body[0] = reached_gc_hash_tables;
-          reached_gc_hash_tables = ___TAG((body-1),0);
+          ___vm_mem.markReachedHashTable(body);
         }
       break;
 
@@ -3023,7 +3022,7 @@ ___HIDDEN void process_gc_hash_tables
 ___PSDKR)
 {
   ___PSGET
-  ___WORD curr = reached_gc_hash_tables;
+  ___WORD curr = ___vm_mem.getHashTablesReached();
 
   while (curr != ___TAG(0,0))
     {
@@ -3797,7 +3796,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
   bytes_allocated_minus_occupied =
     bytes_allocated_minus_occupied +
-    ___CAST(___F64,___ps_mem.getWordsOccupied()) * ___WS;
+    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
 
 #ifdef GATHER_STATS
   MovableObject::resetStats();
@@ -3805,21 +3804,7 @@ ___SIZE_TS nonmovable_words_needed;)
 
   stack_msection_index = stack_msection->index;
 
-  words_prev_msections = 0;
-
-  ___vm_mem.toggleTospace();
-  stack_msection = 0;
-  heap_msection = 0;
-  nb_msections_used = 0;
-
-  ___ps_mem.nextHeapSection();
-
-  scan_msection = heap_msection;
-  scan_ptr = alloc_heap_ptr;
-
-  /* maintain list of GC hash tables reached by GC */
-
-  reached_gc_hash_tables = ___TAG(0,0);
+  ___vm_mem.prepareGC(___ps_mem);
 
   /* trace externally referenced still objects */
 
@@ -3902,7 +3887,7 @@ ___SIZE_TS nonmovable_words_needed;)
       goto again;
     }
 
-  if (!traverse_weak_refs)
+  if (!___vm_mem.traverseWeakRefs())
     {
       /*
        * At this point all of the objects accessible from the roots
