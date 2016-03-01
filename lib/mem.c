@@ -799,8 +799,6 @@ ___SIZE_TS bytes;)
 #endif
   base[___STILL_BODY_OFS - 1] = ___MAKE_HD(bytes, subtype, ___STILL);
 
-  //base[___STILL_LINK_OFS] = still_objs;
-  //still_objs = ___CAST(___WORD,base);
   ___vm_mem.addStillObject(base);
 
   return ___TAG((base + ___STILL_HAND_OFS - ___BODY_OFS),
@@ -2297,13 +2295,7 @@ ___PSDKR)
 (UNMARKED_MOVABLE(obj) || UNMARKED_STILL(obj))
 
 
-___HIDDEN ___SIZE_TS scan
-   ___P((___PSD
-         ___WORD *body),
-        (___PSV
-         body)
-___PSDKR
-___WORD *body;)
+___SIZE_TS scan (___PSD ___WORD *body)
 {
   ___PSGET
   ___WORD head = body[-1];
@@ -2454,83 +2446,13 @@ ___WORD *body;)
 }
 
 
-___HIDDEN void init_still_objs_to_scan
-   ___P((___PSDNC),
-        (___PSVNC)
-___PSDKR)
-{
-  ___PSGET
-  ___WORD *base = ___CAST(___WORD*,still_objs);
-  ___WORD *to_scan = 0;
-
-  while (base != 0)
-    {
-      if (base[___STILL_REFCOUNT_OFS] == 0)
-        base[___STILL_MARK_OFS] = -1;
-      else
-        {
-          base[___STILL_MARK_OFS] = ___CAST(___WORD,to_scan);
-          to_scan = base;
-        }
-      base = ___CAST(___WORD*,base[___STILL_LINK_OFS]);
-    }
-
-  still_objs_to_scan = ___CAST(___WORD,to_scan);
-}
-
-
-___HIDDEN void scan_still_objs_to_scan
-   ___P((___PSDNC),
-        (___PSVNC)
-___PSDKR)
-{
-  ___PSGET
-  ___WORD *base;
-
-  while ((base = ___CAST(___WORD*,still_objs_to_scan)) != 0)
-    {
-      still_objs_to_scan = base[___STILL_MARK_OFS];
-      scan (___PSP base + ___STILL_BODY_OFS);
-    };
-}
-
-
-___HIDDEN void scan_movable_objs_to_scan
-   ___P((___PSDNC),
-        (___PSVNC)
-___PSDKR)
-{
-  ___PSGET
-  ___WORD *body;
-  ___SIZE_TS words;
-
-  for (;;)
-    {
-      if (scan_msection == heap_msection)
-        {
-          if (scan_ptr >= alloc_heap_ptr)
-            break;
-        }
-      else if (scan_ptr >= scan_msection->alloc)
-        {
-          scan_msection = scan_msection->next;
-          scan_ptr = ___vm_mem.getStartOfTospace(scan_msection);
-          continue;
-        }
-      body = scan_ptr + 1;
-      words = scan (___PSP body);
-      scan_ptr = body + words;
-    };
-}
-
-
 ___HIDDEN void free_unmarked_still_objs
    ___P((___PSDNC),
         (___PSVNC)
 ___PSDKR)
 {
   ___PSGET
-  ___WORD *last = &still_objs;
+  ___WORD *last = ___vm_mem.getStillObjectsList();
   ___WORD *base = ___CAST(___WORD*,*last);
 
   while (base != 0)
@@ -2542,7 +2464,7 @@ ___PSDKR)
           if (___HD_SUBTYPE(head) == ___sFOREIGN)
             ___release_foreign
               (___TAG((base + ___STILL_BODY_OFS - ___BODY_OFS), ___tSUBTYPED));
-          words_nonmovable -= base[___STILL_LENGTH_OFS];
+          ___vm_mem.releaseWordsNonMovable(base[___STILL_LENGTH_OFS]);
           free_mem_aligned (base);
         }
       else
@@ -2563,9 +2485,9 @@ ___HIDDEN void free_still_objs
 ___PSDKR)
 {
   ___PSGET
-  ___WORD *base = ___CAST(___WORD*,still_objs);
-
-  still_objs = 0;
+  ___WORD *list = ___vm_mem.getStillObjectsList();
+  ___WORD *base = ___CAST(___WORD*,*list);
+  *list = 0;
 
   while (base != 0)
     {
@@ -2954,7 +2876,7 @@ ___PSDKR)
   reference_location = IN_WILL_LIST;
 #endif
 
-  determine_will_executability (nonexecutable_wills);
+  determine_will_executability (___ps_mem.nonexecutable_wills_);
 
   /*
    * Finish scanning the wills whose testator object remains to be
@@ -2964,7 +2886,7 @@ ___PSDKR)
    * the nonexecutable wills list to the executable wills list.
    */
 
-  tail_exec = &executable_wills;
+  tail_exec = ___vm_mem.getExecutableWillsList();
   curr = *tail_exec;
 
   while (___UNTAG(curr) != 0)
@@ -3806,10 +3728,6 @@ ___SIZE_TS nonmovable_words_needed;)
 
   ___vm_mem.prepareGC(___ps_mem);
 
-  /* trace externally referenced still objects */
-
-  init_still_objs_to_scan (___PSPNC);
-
   /* trace registers */
 
 #ifdef ENABLE_CONSISTENCY_CHECKS
@@ -3878,12 +3796,12 @@ ___SIZE_TS nonmovable_words_needed;)
   again:
 
   if (___CAST(___WORD*,still_objs_to_scan) != 0)
-    scan_still_objs_to_scan (___PSPNC);
+    ___vm_mem.scanStillObjects(___PSPNC);
 
   if (scan_msection != heap_msection ||
       scan_ptr < alloc_heap_ptr)
     {
-      scan_movable_objs_to_scan (___PSPNC);
+      ___vm_mem.scanMovableObjects(___PSPNC);
       goto again;
     }
 

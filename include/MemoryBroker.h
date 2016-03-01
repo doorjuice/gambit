@@ -10,7 +10,11 @@
 extern void* alloc_mem_aligned( ___SIZE_TS words, 
                                 unsigned int multiplier,
                                 unsigned int modulus );
+
 extern void free_mem_aligned(void *ptr);
+
+extern ___SIZE_TS scan(___PSD ___WORD *body);
+
 
 class MemoryManager;
 
@@ -37,6 +41,10 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
     
     inline void addWordsNonMovable(___WORD nbWords) {
         words_nonmovable_ += nbWords;
+    }
+    
+    inline void releaseWordsNonMovable(___WORD nbWords) {
+        words_nonmovable_ -= nbWords;
     }
     
     inline ___WORD getWordsPreviousSections() const {
@@ -70,16 +78,27 @@ class MemoryBroker : public ___vmstate_mem, public ___vmstate_gcstats {
         return gc_hash_tables_reached_;
     }
     
-    void markReachedHashTable(___WORD* hashTable);
+    inline ___WORD* getExecutableWillsList() {
+        return &executable_wills_;
+    }
+    
+    inline ___WORD* getStillObjectsList() {
+        return &still_objs_;
+    }
     
     //TODO still_objs_to_scan could also be unique per thread
     void addStillObject(___WORD* stillObject);
     void markStillObjectForScan(___WORD* stillObject);
+    void markReachedHashTable(___WORD* hashTable);
+    
+    void scanStillObjects(___PSDNC);
+    void scanMovableObjects(___PSDNC);
     
     ___msection* nextMemorySection();
     ___SCMOBJ nextExecutableWill();
     
     void prepareGC(MemoryManager& psmem);
+    void initStillObjectsToScan();
     void updateStats(const MemoryManager& psmem,
                      ___F64 userTime, ___F64 systemTime, ___F64 realTime);
     

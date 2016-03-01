@@ -48,6 +48,7 @@ MemoryBroker::MemoryBroker() {
     // later, specifically once the global setup parameter 'min_heap' is known.
 }
 
+
 void MemoryBroker::addStillObject(___WORD* stillObject) {
     addWordsNonMovable(stillObject[___STILL_LENGTH_OFS]);
     stillObject[___STILL_LINK_OFS] = still_objs_;
@@ -67,6 +68,38 @@ void MemoryBroker::markReachedHashTable(___WORD* hashTable) {
     hashTable[0] = gc_hash_tables_reached_;
     gc_hash_tables_reached_ = ___TAG((hashTable-1), 0);
 }
+
+
+void MemoryBroker::scanStillObjects(___PSDNC) {
+    ___PSGET
+    ___WORD* base;
+
+    while ((base = ___CAST(___WORD*, still_objs_to_scan_)) != NULL) {
+        still_objs_to_scan_ = base[___STILL_MARK_OFS];
+        scan (___PSP base + ___STILL_BODY_OFS);
+    }
+}
+
+void MemoryBroker::scanMovableObjects(___PSDNC) {
+    ___PSGET
+
+    //FIXME why does this require the 'active' ps_state_mem?
+    while (true) {
+        if (scan_msection_ == ___ps_mem.heap_msection_) {
+            if (scan_ptr_ >= ___ps_mem.alloc_heap_ptr_)
+              break;
+        }
+        else if (scan_ptr_ >= scan_msection_->alloc) {
+            scan_msection_ = scan_msection_->next;
+            scan_ptr_ = getStartOfTospace(scan_msection_);
+            continue;
+        }
+        ___WORD* body = scan_ptr_ + 1;
+        ___SIZE_TS words = scan (___PSP body);
+        scan_ptr_ = body + words;
+    }
+}
+
 
 ___msection* MemoryBroker::nextMemorySection() {
     ___msection* result;
@@ -94,6 +127,7 @@ ___SCMOBJ MemoryBroker::nextExecutableWill() {
     }
 }
 
+
 void MemoryBroker::prepareGC(MemoryManager& psmem) {
     words_prev_msections_ = 0;
     nb_msections_used_ = 0;
@@ -108,6 +142,26 @@ void MemoryBroker::prepareGC(MemoryManager& psmem) {
     
     /* maintain list of GC hash tables reached by GC */
     gc_hash_tables_reached_ = ___TAG(0,0);
+    
+    /* trace externally referenced still objects */
+    initStillObjectsToScan();
+}
+
+void MemoryBroker::initStillObjectsToScan() {
+    ___WORD* base = ___CAST(___WORD*, still_objs_);
+    ___WORD* to_scan = NULL;
+
+    while (base != NULL) {
+        if (base[___STILL_REFCOUNT_OFS] == 0)
+            base[___STILL_MARK_OFS] = -1;
+        else {
+            base[___STILL_MARK_OFS] = ___CAST(___WORD, to_scan);
+            to_scan = base;
+        }
+        base = ___CAST(___WORD*, base[___STILL_LINK_OFS]);
+    }
+
+  still_objs_to_scan_ = ___CAST(___WORD, to_scan);
 }
 
 void MemoryBroker::updateStats(const MemoryManager& psmem,
