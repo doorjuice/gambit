@@ -1,5 +1,7 @@
 /* File: "mem.h" */
 
+//#define ___DEBUG_GARBAGE_COLLECT
+
 /* Copyright (c) 1994-2016 by Marc Feeley, All Rights Reserved. */
 
 #ifndef ___MEM_H
@@ -318,7 +320,7 @@ extern ___F64 ___bytes_allocated
 #define gc_user_time            ___VMSTATE_MEM(gc_user_time_)
 #define gc_sys_time             ___VMSTATE_MEM(gc_sys_time_)
 #define gc_real_time            ___VMSTATE_MEM(gc_real_time_)
-#define bytes_allocated_minus_occupied ___VMSTATE_MEM(bytes_allocated_minus_occupied_)
+//#define bytes_allocated_minus_occupied ___VMSTATE_MEM(bytes_allocated_minus_occupied_)
 
 #define last_gc_user_time       ___VMSTATE_MEM(last_gc_user_time_)
 #define last_gc_sys_time        ___VMSTATE_MEM(last_gc_sys_time_)
@@ -328,15 +330,5 @@ extern ___F64 ___bytes_allocated
 #define last_gc_live            ___VMSTATE_MEM(last_gc_live_)
 #define last_gc_movable         ___VMSTATE_MEM(last_gc_movable_)
 #define last_gc_nonmovable      ___VMSTATE_MEM(last_gc_nonmovable_)
-
-/* words usable in msections */
-#define WORDS_MOVABLE_USABLE \
-(2*the_msections->nb_sections*___CAST(___SIZE_TS,((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1)))
-
-/* words available in heap */
-#define WORDS_AVAILABLE \
-(words_nonmovable + WORDS_MOVABLE_USABLE - \
-overflow_reserve - 2*___MSECTION_FUDGE)
-
 
 #endif

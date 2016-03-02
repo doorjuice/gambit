@@ -3831,6 +3831,7 @@ end-of-code
    ___F64 user, sys, real;
    ___SIZE_TS minflt, majflt;
    ___F64 n = ___bytes_allocated (___PSPNC);
+   const ___vmstate_gcstats* ___gcstats = ___vms->mem.getStats();
    ___SCMOBJ result;
 
    ___FRAME_STORE_RA(___R0)
@@ -3849,23 +3850,23 @@ end-of-code
       ___F64VECTORSET(result,___FIX(0),user)
       ___F64VECTORSET(result,___FIX(1),sys)
       ___F64VECTORSET(result,___FIX(2),real)
-      ___F64VECTORSET(result,___FIX(3),___vms->mem.gc_user_time_)
-      ___F64VECTORSET(result,___FIX(4),___vms->mem.gc_sys_time_)
-      ___F64VECTORSET(result,___FIX(5),___vms->mem.gc_real_time_)
-      ___F64VECTORSET(result,___FIX(6),___vms->mem.nb_gcs_)
+      ___F64VECTORSET(result,___FIX(3),___gcstats->gc_user_time_)
+      ___F64VECTORSET(result,___FIX(4),___gcstats->gc_sys_time_)
+      ___F64VECTORSET(result,___FIX(5),___gcstats->gc_real_time_)
+      ___F64VECTORSET(result,___FIX(6),___gcstats->nb_gcs_)
       ___F64VECTORSET(result,___FIX(7),___bytes_allocated (___PSPNC))
       ___F64VECTORSET(result,___FIX(8),(2*(1+2)<<___LWS))
       ___F64VECTORSET(result,___FIX(9),n)
       ___F64VECTORSET(result,___FIX(10),minflt)
       ___F64VECTORSET(result,___FIX(11),majflt)
-      ___F64VECTORSET(result,___FIX(12),___vms->mem.last_gc_user_time_)
-      ___F64VECTORSET(result,___FIX(13),___vms->mem.last_gc_sys_time_)
-      ___F64VECTORSET(result,___FIX(14),___vms->mem.last_gc_real_time_)
-      ___F64VECTORSET(result,___FIX(15),___vms->mem.last_gc_heap_size_)
-      ___F64VECTORSET(result,___FIX(16),___vms->mem.last_gc_alloc_)
-      ___F64VECTORSET(result,___FIX(17),___vms->mem.last_gc_live_)
-      ___F64VECTORSET(result,___FIX(18),___vms->mem.last_gc_movable_)
-      ___F64VECTORSET(result,___FIX(19),___vms->mem.last_gc_nonmovable_)
+      ___F64VECTORSET(result,___FIX(12),___gcstats->last_gc_user_time_)
+      ___F64VECTORSET(result,___FIX(13),___gcstats->last_gc_sys_time_)
+      ___F64VECTORSET(result,___FIX(14),___gcstats->last_gc_real_time_)
+      ___F64VECTORSET(result,___FIX(15),___gcstats->last_gc_heap_size_)
+      ___F64VECTORSET(result,___FIX(16),___gcstats->last_gc_alloc_)
+      ___F64VECTORSET(result,___FIX(17),___gcstats->last_gc_live_)
+      ___F64VECTORSET(result,___FIX(18),___gcstats->last_gc_movable_)
+      ___F64VECTORSET(result,___FIX(19),___gcstats->last_gc_nonmovable_)
 
       ___still_obj_refcount_dec (result);
    }

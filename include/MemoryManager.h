@@ -7,8 +7,6 @@
 
 /*---------------------------------------------------------------------------*/
 
-extern void ___fatal_error(char** msgs);
-
 class MemoryManager : public ___pstate_mem {
     
     private:
@@ -20,8 +18,6 @@ class MemoryManager : public ___pstate_mem {
                                          ___virtual_machine_state ___vms);
     
     public:
-    static void reportFatalOverflow(char* msg);
-    
     inline void updateHeapPtr(___WORD* allocPtr) {
         alloc_heap_ptr_ = allocPtr;
     }
@@ -29,9 +25,9 @@ class MemoryManager : public ___pstate_mem {
     /* words occupied in heap by movable objects including current msections */
     inline ___WORD getWordsMovable() const {
         //FIXME why does this require the 'active' ps_state_mem?
-        return 2 * (broker->getWordsPreviousSections() +
-                    (alloc_stack_start_ - alloc_stack_ptr_) +
-                    (alloc_heap_ptr_ - alloc_heap_start_));
+        return 2 * (broker->getWordsPreviousSections()
+                    + (alloc_stack_start_ - alloc_stack_ptr_)
+                    + (alloc_heap_ptr_ - alloc_heap_start_));
     }
     
     /* words occupied in heap including current msections */

@@ -1657,10 +1657,7 @@ ___glo_struct *glo;)
 }
 
 
-___HIDDEN void dump_memory_map
-   ___P((___PSDNC),
-        (___PSVNC)
-___PSDKR)
+void dump_memory_map(___PSDNC)
 {
   ___PSGET
   int ns = the_msections->nb_sections;
@@ -1810,7 +1807,7 @@ char *msg;)
 }
 
 
-___HIDDEN void validate_old_obj
+void validate_old_obj
    ___P((___PSD
          ___WORD obj),
         (___PSV
@@ -1822,7 +1819,7 @@ ___WORD obj;)
   ___WORD *hd_ptr = ___BODY(obj)-1;
   ___WORD head;
   int i = ___vm_mem.find_msection(hd_ptr);
-  if (i >= 0 && i < the_msections->nb_sections)
+  if (i >= 0 && i < ___vm_mem.getNbSections())
     {
       ___PTRDIFF_T pos = hd_ptr - the_msections->sections[i]->base;
       if (pos >= 0 && pos < ___MSECTION_SIZE)
@@ -1832,7 +1829,7 @@ ___WORD obj;)
             {
               ___WORD *hd_ptr2 = ___UNTAG_AS(head,___FORW)+___BODY_OFS-1;
               int i2 = ___vm_mem.find_msection(hd_ptr2);
-              if (i2 >= 0 && i2 < the_msections->nb_sections)
+              if (i2 >= 0 && i2 < ___vm_mem.getNbSections())
                 {
                   ___PTRDIFF_T pos2 = hd_ptr2 - the_msections->sections[i2]->base;
                   if (tospace_at_top
@@ -1931,21 +1928,10 @@ ___PSDKR)
 }
 
 
-___HIDDEN void zap_fromspace
-   ___P((___virtual_machine_state ___vms),
-        (___vms)
-___virtual_machine_state ___vms;)
+___HIDDEN void zap_fromspace(___virtual_machine_state ___vms)
 {
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  int i;
-  for (i=0; i<the_msections->nb_sections; i++)
-    zap_section (___vms->mem.getStartOfFromspace(the_msections->sections[i]),
-                 ___MSECTION_SIZE>>1);
-
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
+  for (int i = 0; i < ___vms->mem.getNbSections(); i++)
+    zap_section (___vms->mem.getStartOfFromspace(i), ___MSECTION_SIZE>>1);
 }
 
 #endif
@@ -2712,13 +2698,7 @@ ___SCMOBJ ___setup_mem_vmstate(___virtual_machine_state ___vms)
   }
 #endif
 
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___vms->mem.var
-
-  ___vms->mem.heap_size_ = WORDS_AVAILABLE;
-  
-#undef ___VMSTATE_MEM
-#define ___VMSTATE_MEM(var) ___VMSTATE_FROM_PSTATE(___ps)->mem.var
+  ___vms->mem.refreshHeapSize();
 
   return ___FIX(___NO_ERR);
 }
@@ -2862,10 +2842,7 @@ ___WORD list;)
 }
 
 
-___HIDDEN void process_wills
-   ___P((___PSDNC),
-        (___PSVNC)
-___PSDKR)
+void process_wills (___PSDNC)
 {
   ___PSGET
   ___WORD* tail_exec;
@@ -3687,7 +3664,6 @@ ___SIZE_TS nonmovable_words_needed;)
 #endif
 {
   ___PSGET
-  ___SIZE_TS avail;
   int target_nb_sections;
   int stack_msection_index;
   ___BOOL overflow = 0;
@@ -3714,11 +3690,11 @@ ___SIZE_TS nonmovable_words_needed;)
   ___printf ("___ps->hp          = 0x%08x\n", ___ps->hp);
 #endif
 
-  words_nonmovable += nonmovable_words_needed;
+  ___vm_mem.addWordsNonMovable(nonmovable_words_needed);
 
-  bytes_allocated_minus_occupied =
-    bytes_allocated_minus_occupied +
-    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
+  ___vm_mem.set_bytes_allocated_minus_occupied(
+    ___vm_mem.get_bytes_allocated_minus_occupied() +
+    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS);
 
 #ifdef GATHER_STATS
   MovableObject::resetStats();
@@ -3789,51 +3765,22 @@ ___SIZE_TS nonmovable_words_needed;)
 
   mark_rc (___PSPNC);
 
-  /* mark objects reachable from marked objects */
-
-  traverse_weak_refs = 0; /* don't traverse weak references in first pass */
-
-  again:
-
-  if (___CAST(___WORD*,still_objs_to_scan) != 0)
-    ___vm_mem.scanStillObjects(___PSPNC);
-
-  if (scan_msection != heap_msection ||
-      scan_ptr < alloc_heap_ptr)
-    {
-      ___vm_mem.scanMovableObjects(___PSPNC);
-      goto again;
-    }
-
-  if (!___vm_mem.traverseWeakRefs())
-    {
-      /*
-       * At this point all of the objects accessible from the roots
-       * without having to traverse a weak reference have been scanned
-       * by the GC.
-       */
-
-      traverse_weak_refs = 1;
-
-      process_wills (___PSPNC);
-
-      goto again;
-    }
+  ___vm_mem.scanMemoryObjects();
 
   process_gc_hash_tables (___PSPNC);
 
   free_unmarked_still_objs (___PSPNC);
 
-  target_nb_sections = (adjust_heap(WORDS_AVAILABLE, ___ps_mem.getWordsOccupied())
-                        - words_nonmovable
-                        + normal_overflow_reserve
+  target_nb_sections = (adjust_heap(___vm_mem.getWordsAvailable(), ___ps_mem.getWordsOccupied())
+                        - ___vm_mem.getWordsNonMovable()
+                        + ___vm_mem.getNormalOverflowReserve()
                         + 2*___MSECTION_FUDGE
                         + 2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1) - 1)
                        / (2*((___MSECTION_SIZE>>1)-___MSECTION_FUDGE+1));
 
-  if (target_nb_sections < nb_msections_used)
+  if (target_nb_sections < ___vm_mem.getNbSectionsUsed())
     {
-      target_nb_sections = the_msections->nb_sections;
+      target_nb_sections = ___vm_mem.getNbSections();
       overflow = 1;
     }
 
@@ -3860,7 +3807,7 @@ ___SIZE_TS nonmovable_words_needed;)
          */
 
         p1 = start + length;
-        p2 = ___vm_mem.getStartOfFromspace(the_msections->head) + length;
+        p2 = ___vm_mem.getStartOfFromspace() + length;
 
         while (p1 != start)
           *--p2 = *--p1;
@@ -3869,7 +3816,6 @@ ___SIZE_TS nonmovable_words_needed;)
       }
 
     ___vm_mem.adjust_msections(target_nb_sections);
-
     ___ps_mem.nextStackSection();
 
     p1 = start + length;
@@ -3892,25 +3838,14 @@ ___SIZE_TS nonmovable_words_needed;)
   if (alloc_heap_ptr > alloc_heap_limit - ___MSECTION_FUDGE)
     ___ps_mem.nextHeapSection();
 
-  avail = WORDS_AVAILABLE + overflow_reserve - ___ps_mem.getWordsOccupied();
+  overflow = ___vm_mem.refreshOverflowReserve(___ps_mem.getWordsOccupied());
 
-  if (avail <= overflow_reserve + (WORDS_MOVABLE_USABLE >> 10))
-    {
-      overflow = 1;
-      overflow_reserve >>= 5; /* make 96.875% of reserve usable */
-      if (overflow_reserve == 0)
-        ___ps_mem.reportFatalOverflow("Insufficient overflow reserve");
-    }
-  else if (avail >= normal_overflow_reserve)
-    overflow_reserve = normal_overflow_reserve; /* restore overflow reserve */
+  ___vm_mem.set_bytes_allocated_minus_occupied( 
+    ___vm_mem.get_bytes_allocated_minus_occupied() -
+    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS);
 
-  bytes_allocated_minus_occupied =
-    bytes_allocated_minus_occupied -
-    ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
-
-  words_nonmovable -= nonmovable_words_needed;
-
-  heap_size = WORDS_AVAILABLE;
+  ___vm_mem.releaseWordsNonMovable(nonmovable_words_needed);
+  ___vm_mem.refreshHeapSize();
 
   prepare_mem_pstate (___ps);
 
@@ -3971,7 +3906,7 @@ ___PSDKR)
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-  avail = (heap_size - ___ps_mem.getWordsOccupied()) / 2;
+  avail = (___vm_mem.getHeapSize() - ___ps_mem.getWordsOccupied()) / 2;
 
   if (avail > ___MSECTION_WASTE
 #ifdef ___CALL_GC_FREQUENTLY
@@ -4050,7 +3985,7 @@ ___PSDKR)
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-  avail = (heap_size - ___ps_mem.getWordsOccupied()) / 2;
+  avail = (___vm_mem.getHeapSize() - ___ps_mem.getWordsOccupied()) / 2;
 
   if (avail > ___MSECTION_WASTE
 #ifdef ___CALL_GC_FREQUENTLY
@@ -4083,7 +4018,7 @@ ___PSDKR)
   alloc_stack_ptr = ___ps->fp; /* needed by 'WORDS_OCCUPIED' */
   alloc_heap_ptr  = ___ps->hp; /* needed by 'WORDS_OCCUPIED' */
 
-  return bytes_allocated_minus_occupied +
+  return ___vm_mem.get_bytes_allocated_minus_occupied() +
          ___CAST(___F64, ___ps_mem.getWordsOccupied()) * ___WS;
 }
 

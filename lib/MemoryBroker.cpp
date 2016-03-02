@@ -6,6 +6,12 @@ const ___WORD MemoryBroker::MSECTION_SIZE = ___MSECTION_SIZE;
 const ___WORD MemoryBroker::MSECTION_HALF = MSECTION_SIZE >> 1;
 
 
+void MemoryBroker::reportFatalOverflow(char* msg) {
+    char* msgs[] = {msg, NULL};
+    ___fatal_error(msgs);
+}
+
+
 MemoryBroker::MemoryBroker() {
     
     setup_rc(); /* Setup reference counted memory management. */
@@ -16,23 +22,23 @@ MemoryBroker::MemoryBroker() {
     * garbage collector.
     */
     
-    normal_overflow_reserve_ = 2*( (___MAX_NB_PARMS+___SUBTYPED_OVERHEAD) +
-                                    ___MAX_NB_ARGS*(___PAIR_SIZE+___PAIR_OVERHEAD) );
+    normal_overflow_reserve_ = 2*( (___MAX_NB_PARMS + ___SUBTYPED_OVERHEAD) +
+                                    ___MAX_NB_ARGS * (___PAIR_SIZE + ___PAIR_OVERHEAD) );
     overflow_reserve_ = normal_overflow_reserve_;
     
     /* Setup GC statistics */
     
-    nb_gcs_ = 0.0;
-    gc_user_time_ = 0.0;
-    gc_sys_time_ = 0.0;
-    gc_real_time_ = 0.0;
-    bytes_allocated_minus_occupied_ = 0.0;
+    gcstats_.nb_gcs_ = 0.0;
+    gcstats_.gc_user_time_ = 0.0;
+    gcstats_.gc_sys_time_ = 0.0;
+    gcstats_.gc_real_time_ = 0.0;
+    gcstats_.bytes_allocated_minus_occupied_ = 0.0;
     
-    last_gc_real_time_ = 0.0;
-    last_gc_heap_size_ = ___CAST(___F64,heap_size_) * ___WS;
-    last_gc_live_ = 0.0;
-    last_gc_movable_ = 0.0;
-    last_gc_nonmovable_ = 0.0;
+    gcstats_.last_gc_real_time_ = 0.0;
+    gcstats_.last_gc_heap_size_ = 0.0;
+    gcstats_.last_gc_live_ = 0.0;
+    gcstats_.last_gc_movable_ = 0.0;
+    gcstats_.last_gc_nonmovable_ = 0.0;
     
     /* Initialize GC state */
     
@@ -46,6 +52,31 @@ MemoryBroker::MemoryBroker() {
     // Warning: the MemoryBroker instance will _not_ be ready for use after being 
     // constructed, since the actual initial allocation of heap space is left for
     // later, specifically once the global setup parameter 'min_heap' is known.
+}
+
+___WORD MemoryBroker::getWordsMovableUsable() const {
+    return 2 * the_msections_->nb_sections
+           * ___CAST(___SIZE_TS,(MSECTION_HALF - ___MSECTION_FUDGE + 1));
+}
+
+___WORD MemoryBroker::getWordsAvailable() const {
+    return words_nonmovable_ + getWordsMovableUsable()
+           - overflow_reserve_ - 2*___MSECTION_FUDGE;
+}
+
+___BOOL MemoryBroker::refreshOverflowReserve(___WORD wordsOccupied) {
+    ___SIZE_TS available = getWordsAvailable() - wordsOccupied;
+    
+    if (available <= (getWordsMovableUsable() >> 10)) {
+        overflow_reserve_ >>= 5; /* make 96.875% of reserve usable */
+        if (overflow_reserve_ == 0)
+            reportFatalOverflow("Insufficient overflow reserve");
+        return 1;
+    }
+    else if (available + overflow_reserve_ >= normal_overflow_reserve_)
+        overflow_reserve_ = normal_overflow_reserve_; /* restore overflow reserve */
+    
+    return 0;
 }
 
 
@@ -70,6 +101,34 @@ void MemoryBroker::markReachedHashTable(___WORD* hashTable) {
 }
 
 
+void MemoryBroker::scanMemoryObjects(___PSDNC) {
+    ___PSGET
+    
+    /* mark objects reachable from marked objects */
+    traverse_weak_refs_ = false; /* don't traverse weak references in first pass */
+
+    while (true) {
+        scanStillObjects(___PSPNC);
+
+        if (scan_msection_ != ___ps_mem.heap_msection_ 
+            || scan_ptr_ < ___ps_mem.alloc_heap_ptr_) {
+            scanMovableObjects(___PSPNC);
+            continue;
+        }
+
+        if (traverse_weak_refs_)
+            break;
+        
+        /*
+         * At this point all of the objects accessible from the roots
+         * without having to traverse a weak reference have been scanned
+         * by the GC.
+         */
+        traverse_weak_refs_ = true;
+        process_wills (___PSPNC);
+    }
+}
+
 void MemoryBroker::scanStillObjects(___PSDNC) {
     ___PSGET
     ___WORD* base;
@@ -87,7 +146,7 @@ void MemoryBroker::scanMovableObjects(___PSDNC) {
     while (true) {
         if (scan_msection_ == ___ps_mem.heap_msection_) {
             if (scan_ptr_ >= ___ps_mem.alloc_heap_ptr_)
-              break;
+                break;
         }
         else if (scan_ptr_ >= scan_msection_->alloc) {
             scan_msection_ = scan_msection_->next;
@@ -166,20 +225,20 @@ void MemoryBroker::initStillObjectsToScan() {
 
 void MemoryBroker::updateStats(const MemoryManager& psmem,
                                ___F64 userTime, ___F64 systemTime, ___F64 realTime) {
-    nb_gcs_ += 1.0;
-    gc_user_time_ += userTime;
-    gc_sys_time_  += systemTime;
-    gc_real_time_ += realTime;
+    gcstats_.nb_gcs_ += 1.0;
+    gcstats_.gc_user_time_ += userTime;
+    gcstats_.gc_sys_time_  += systemTime;
+    gcstats_.gc_real_time_ += realTime;
     
-    last_gc_user_time_ = userTime;
-    last_gc_sys_time_  = systemTime;
-    last_gc_real_time_ = realTime;
-    last_gc_heap_size_ = ___CAST(___F64, getHeapSize()) * ___WS;
-    last_gc_alloc_ = bytes_allocated_minus_occupied_ +
-                     ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
-    last_gc_live_ = ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
-    last_gc_movable_ = ___CAST(___F64, psmem.getWordsMovable()) * ___WS;
-    last_gc_nonmovable_ = ___CAST(___F64, words_nonmovable_) * ___WS;
+    gcstats_.last_gc_user_time_ = userTime;
+    gcstats_.last_gc_sys_time_  = systemTime;
+    gcstats_.last_gc_real_time_ = realTime;
+    gcstats_.last_gc_heap_size_ = ___CAST(___F64, heap_size_) * ___WS;
+    gcstats_.last_gc_alloc_ = gcstats_.bytes_allocated_minus_occupied_ +
+                              ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
+    gcstats_.last_gc_live_ = ___CAST(___F64, psmem.getWordsOccupied()) * ___WS;
+    gcstats_.last_gc_movable_ = ___CAST(___F64, psmem.getWordsMovable()) * ___WS;
+    gcstats_.last_gc_nonmovable_ = ___CAST(___F64, words_nonmovable_) * ___WS;
 }
 
 

@@ -7,11 +7,6 @@
 #include <assert.h>
 
 
-void MemoryManager::reportFatalOverflow(char* msg) {
-    char* msgs[] = {msg, NULL};
-    ___fatal_error(msgs);
-}
-
 void MemoryManager::init() {
     assert(broker != NULL); // You can think of 'init' as a delayed constructor
     
@@ -56,7 +51,7 @@ ___WORD* MemoryManager::nextHeapSection() {
     ___msection* nextSection = broker->nextMemorySection();
     if (nextSection == NULL) {
         if (heap_msection_ == stack_msection_)
-            reportFatalOverflow("Heap overflow");
+            broker->reportFatalOverflow("Heap overflow");
         nextSection = stack_msection_;
     }
     heap_msection_ = nextSection;
@@ -75,7 +70,7 @@ ___WORD* MemoryManager::nextStackSection() {
     ___msection* nextSection = broker->nextMemorySection();
     if (nextSection == NULL) {
         if (stack_msection_ == heap_msection_)
-            reportFatalOverflow("Stack overflow");
+            broker->reportFatalOverflow("Stack overflow");
         nextSection = heap_msection_;
     }
     stack_msection_ = nextSection;
